@@ -1,0 +1,16 @@
+<launch>
+<node pkg="kinectv2client" type="KinectV2Client" name="KinectV2Client"/>
+<node pkg="okao_client" type="OkaoClient" name="OkaoClient" />
+<node pkg="okao_client" type="okao_stack" name="okao_stack" />
+<node pkg="okao_client" type="kinect_okao_bind2" name="kinect_okao_bind2" />
+<node pkg="okao_client" type="people_recog_info" name="people_recog_info" output="screen"/>
+
+<node pkg="okao_client" type="recog_info_vision" name="recog_info_vision" />
+
+<!--
+
+
+<node pkg="okao_client" type="face_mapping2" name="fame_mapping2" />
+-->
+</launch>
+

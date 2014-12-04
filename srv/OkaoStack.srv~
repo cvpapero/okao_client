@@ -1,0 +1,9 @@
+string rule
+int32 okao_id
+string name
+string laboratory
+string grade
+---------
+string name
+string laboratory
+string grade

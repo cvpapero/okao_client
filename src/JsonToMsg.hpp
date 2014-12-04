@@ -1,0 +1,98 @@
+/*
+2014.10.29------------------------
+このヘッダがあるだけでJSON ---> ROS Messageできるようにする
+*/
+
+
+#pragma
+#include "picojson.h"
+#include <humans_msgs/Humans.h>
+#include <cstdlib>
+
+#define OKAO 3
+
+class POSE{
+public:
+  double x;
+  double y;
+  double z;
+};
+
+namespace JsonToMsg{
+
+  void face(picojson::value v, humans_msgs::Face *okao, double cx, double cy, bool *p_ok)
+  {  
+    int pos[4];
+    picojson::object& obj = v.get<picojson::object>();
+    //facesの中身があるならば
+    if( obj.find("error") != obj.end() && obj["error"].get<std::string>().empty())
+      {
+	if( obj.find("faces") != obj.end() )
+	  {
+	    picojson::array array = obj["faces"].get<picojson::array>();
+	    //int num = 0;
+	    for(picojson::array::iterator it = array.begin(); it != array.end(); ++it)
+	      {
+		*p_ok = true;
+		picojson::object& person_obj = it->get<picojson::object>();
+		
+		//顔の位置のとりだし
+		picojson::array pos_array = person_obj["position"].get<picojson::array>();
+		for(int i = 0; i < 4; ++i)
+		  {
+		    pos[i] = (int)pos_array[i].get<double>();
+		  }
+		
+		//人物ID,信頼度の取り出し
+		picojson::array id_array = person_obj["id"].get<picojson::array>();
+		picojson::array db_info_array = person_obj["db_info"].get<picojson::array>();
+		
+		double tmp_id[3], tmp_conf[3]; 
+		std::string tmp_name[3], tmp_grade[3], tmp_laboratory[3];
+		
+		for(int n = 0; n < OKAO; ++n)
+		  {
+		    picojson::array id_array_array = id_array[n].get<picojson::array>();
+		    tmp_id[n] = (int)id_array_array[0].get<double>();
+		    tmp_conf[n] = (int)id_array_array[1].get<double>();
+		    picojson::object& db_info_obj = db_info_array[n].get<picojson::object>();
+		    tmp_name[n] = db_info_obj["name"].get<std::string>();
+		    tmp_grade[n] = db_info_obj["grade"].get<std::string>();
+		    tmp_laboratory[n] = db_info_obj["laboratory"].get<std::string>();		 
+		  }			
+		//一人目の信頼度を利用する
+		if(tmp_conf[0] < 200)
+		  {
+		    for(int n = 0; n < OKAO; ++n)
+		      {
+			tmp_id[n] = 0;
+			tmp_conf[n] = 0;
+			tmp_name[n] = "Unknown";
+			tmp_laboratory[n] = "Unknown";
+			tmp_grade[n] = "Unknown";
+		      }			    	
+		  }
+		
+		okao->persons.resize( OKAO );
+		for(int n = 0; n < OKAO; ++n)
+		  {
+		    okao->persons[n].okao_id = tmp_id[n];
+		    okao->persons[n].conf = tmp_conf[n];
+		    okao->persons[n].name = tmp_name[n];
+		    okao->persons[n].laboratory = tmp_laboratory[n];
+		    okao->persons[n].grade = tmp_grade[n];
+		  }
+		okao->position.lt.x = pos[0]+cx;
+		okao->position.lt.y = pos[1]+cy;
+		okao->position.rt.x = pos[2]+cx;
+		okao->position.rt.y = pos[1]+cy;
+		okao->position.lb.x = pos[0]+cx;
+		okao->position.lb.y = pos[3]+cy;
+		okao->position.rb.x = pos[2]+cx;
+		okao->position.rb.y = pos[3]+cy;		    
+	      }	
+	  }    
+      }
+    
+  }
+}

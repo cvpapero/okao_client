@@ -1,0 +1,131 @@
+/*
+2014.6.2-----------------
+okao_recog_vision
+openNiTE2_8の画像とpeople_recognize3_1のヒストグラムを噛ました人物データを
+結びつけて可視化する
+
+mapで名前も出せるようにする
+
+
+疑問
+なんでUnknownが出てしまうのか？
+おそらく、データが空のときに反応しているのではないか
+つまり、顔が取れなかったときも、0つまりUnknownとして出力しているのではないか
+
+だったら、データの受け渡しをしない方が良いのか？？？
+
+*/
+
+#include <ros/ros.h>
+#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/image_encodings.h>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <sstream>
+#include <iostream>
+#include <vector>
+#include <math.h>
+#include <cassert>
+#include <string>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include <map>
+
+#include <humans_msgs/Humans.h>
+#include "okao_client/OkaoStack.h"
+
+using namespace cv;
+using namespace std;
+
+static const std::string OPENCV_WINDOW = "recog Image window";
+
+
+class ImageConverter
+{
+  ros::NodeHandle nh_;
+  image_transport::ImageTransport it_;
+  image_transport::Subscriber recog_image_sub_;
+  //image_transport::Publisher image_pub_;
+  
+public:
+  ImageConverter()
+    : it_(nh_)
+  {
+
+    recog_image_sub_ = it_.subscribe("/camera/image/color", 1, 
+      &ImageConverter::imageCb, this);
+   
+    cv::namedWindow(OPENCV_WINDOW);
+  }
+
+  ~ImageConverter()
+  {
+    cv::destroyWindow(OPENCV_WINDOW);
+  }
+
+  void imageCb(const sensor_msgs::ImageConstPtr& msg)
+  {	
+    cv_bridge::CvImagePtr cv_ptr;
+    try
+    {
+      cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+    }
+    catch (cv_bridge::Exception& e)
+    {
+      ROS_ERROR("cv_bridge exception: %s", e.what());
+      return;
+    }
+
+    //okao_clientから顔の位置をサブスクライブ
+    humans_msgs::HumansConstPtr okao_data = ros::topic::waitForMessage<humans_msgs::Humans>("/humans/RecogInfo");
+
+    ros::ServiceClient okaoStack = nh_.serviceClient<okao_client::OkaoStack>("okao_stack");
+    okao_client::OkaoStack stack;
+
+
+    // Draw an example circle on the video stream
+    for(int i= 0; i<okao_data->num; i++)
+      {
+	
+	double lt_x = okao_data->human[i].face.position.lt.x;
+	double lt_y = okao_data->human[i].face.position.lt.y;
+	double rb_x = okao_data->human[i].face.position.rb.x;
+	double rb_y = okao_data->human[i].face.position.rb.y;
+	cv::rectangle(cv_ptr->image,
+		      cv::Point(lt_x, lt_y), 
+		      cv::Point(rb_x, rb_y),
+		      CV_RGB(255,0,0));
+
+	stack.request.rule = "req";
+	stack.request.okao_id = okao_data->human[i].max_okao_id;
+	okaoStack.call(stack);	
+
+	std::stringstream idAndNameStream;
+	std::string idAndName;
+	idAndNameStream << okao_data->human[i].d_id <<","<< stack.response.name << ","<< okao_data->human[i].max_hist;
+	idAndName = idAndNameStream.str();	    
+	cout <<"recog[ "<<i<<" ]: " << idAndName << endl;
+	cv::putText(cv_ptr->image, idAndName,
+		    cv::Point(rb_x, rb_y),
+		    FONT_HERSHEY_SIMPLEX,0.5, cv::Scalar(0,0,200), 2, CV_AA);
+	
+      }
+    // Update GUI Window
+    cv::imshow(OPENCV_WINDOW, cv_ptr->image);
+    cv::waitKey(1);
+    
+    // Output modified video stream
+    //image_pub_.publish(cv_ptr->toImageMsg());
+  }
+};
+
+int main(int argc, char** argv)
+{
+  ros::init(argc, argv, "recog_image");
+  ImageConverter ic;
+  ros::spin();
+  return 0;
+}

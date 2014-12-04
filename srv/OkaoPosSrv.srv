@@ -1,0 +1,6 @@
+#人物位置だけ
+string rule
+int32 okao_id
+--------- 
+float64 res_x
+float64 res_y
