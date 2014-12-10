@@ -210,5 +210,11 @@ target_link_libraries(recog_info_vision ${catkin_LIBRARIES} ${OpenCV_LIBS})
 add_executable(face_mapping2 src/face_mapping2.cpp)
 target_link_libraries(face_mapping2 ${catkin_LIBRARIES})
 
+add_executable(tracking_points src/tracking_points.cpp)
+target_link_libraries(tracking_points ${catkin_LIBRARIES})
+
+add_executable(humans_pass2 src/humans_pass2.cpp)
+target_link_libraries(humans_pass2 ${catkin_LIBRARIES})
+
 add_executable(face_detector src/face_detector.cpp)
 target_link_libraries(face_detector ${catkin_LIBRARIES} ${OpenCV_LIBS})

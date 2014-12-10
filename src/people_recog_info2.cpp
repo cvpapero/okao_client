@@ -48,6 +48,7 @@ class RecogInfo
 private:
   ros::NodeHandle nh;
   ros::Publisher recog_pub_;
+  ros::Publisher path_pub_;
   ros::Subscriber bind_sub_;
   map<long, int> tracking_id_buf;
   map<int, map<int, int> > hist;
@@ -56,6 +57,7 @@ public:
   RecogInfo()
   {
     recog_pub_ = nh.advertise<humans_msgs::Humans>("/humans/RecogInfo", 1);
+    path_pub_ = nh.advertise<humans_msgs::Humans>("/humans/HumansPath", 1);
     bind_sub_ = nh.subscribe("/humans/OkaoServer", 1, &RecogInfo::callback, this);
   }
 
@@ -165,8 +167,10 @@ public:
 	  }
       }
     */    
-
+    recog.header.stamp = ros::Time::now();
+    recog.header.frame_id = "recog";
     recog_pub_.publish(recog);
+    path_pub_.publish(recog);
   }
 };
 

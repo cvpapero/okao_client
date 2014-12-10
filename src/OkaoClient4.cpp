@@ -1,6 +1,8 @@
+/*
+2014.12.8-------------
+画像とjointを同期
 
-
-
+ */
 
 //basic
 #include <iostream>
@@ -70,9 +72,8 @@ class MyClass
 public:
   MyClass() :
     it_(nh_),  
-    image_sub_( it_, "/camera/image/color", 1000 ),
-    humans_sub_( nh_, "/humans/KinectV2", 1000 ),
-
+    image_sub_( it_, "/camera/image/color", 100 ),
+    humans_sub_( nh_, "/humans/KinectV2", 100 ),
     sync( MySyncPolicy( 100 ), image_sub_, humans_sub_ )
   {
     sync.registerCallback( boost::bind( &MyClass::callback, this, _1, _2 ) );
@@ -90,9 +91,9 @@ public:
 	return;
       } 
 
-    image_pub_ = it_.advertise("/image_converter/output_video",1);
-    okaoData_pub_ = nh_.advertise<humans_msgs::Humans>("/humans/OkaoServer",10);
-
+    image_pub_ = it_.advertise("/camera/image/face_detect",1);
+    discovery_pub_ = nh_.advertise<humans_msgs::Humans>("/humans/OkaoServer",10);
+    undiscovered_pub_ = nh_.advertise<humans_msgs::Humans>("/humans/OkaoServerNot",10);
     //ウィンドウ
     cv::namedWindow(OPENCV_WINDOW);
   }
@@ -112,55 +113,96 @@ public:
 		const humans_msgs::HumansConstPtr& kinect
 		)
   {  
-    int p_i = 0;
-    humans_msgs::Humans okao_human;   
+    int okao_i = 0;
+    int no_okao_i = 0; 
+    humans_msgs::Humans okao_human, no_okao_human;   
     cv_bridge::CvImagePtr cv_ptr;
     try
       {
 	cv_ptr = cv_bridge::toCvCopy(imgmsg, sensor_msgs::image_encodings::BGR8);
 	for(int i = 0; i < kinect->num; i++)
 	  {
-	    POS head2d, head3d, cut;
+	    POS head2d, head3d, neck2d;;
+	    Point top, bottom;
 	    head2d.x = kinect->human[i].body.joints[HEAD].position_color_space.x;	   
 	    head2d.y = kinect->human[i].body.joints[HEAD].position_color_space.y;
-	    head3d.depth = kinect->human[i].body.joints[HEAD].position.x;
 
-	    double f_horizon = HORIZON * M_PI / 180.0;
-	    double f_vertical = VERTICAL * M_PI / 180.0;
-	    double diff_w =  MAX_W * atan2( FACE_W, head3d.depth ) / f_horizon;
-	    double diff_h =  MAX_H * atan2( FACE_H, head3d.depth ) / f_vertical;
+	    neck2d.x = kinect->human[i].body.joints[SPINE_S].position_color_space.x;	   
+	    neck2d.y = kinect->human[i].body.joints[SPINE_S].position_color_space.y;
 
-	    cut.x = head2d.x - diff_w;
-	    cut.y = head2d.y - diff_h;
+	    //head3d.depth = kinect->human[i].body.joints[HEAD].position.x;
 
+	    //double f_horizon = HORIZON * M_PI / 180.0;
+	    //double f_vertical = VERTICAL * M_PI / 180.0;
+	    double diff_w =  fabs(head2d.y-neck2d.y);//cv_ptr->image.cols * atan2( FACE_W, head3d.depth ) / f_horizon;
+	    double diff_h =  fabs(head2d.y-neck2d.y);//cv_ptr->image.rows * atan2( FACE_H, head3d.depth ) / f_vertical;
+
+	    //diff_w = max()
+
+	    //cout<<"atan2 w:" <<atan2( FACE_W, head3d.depth )<<endl;
+	    //cout<<"atan2 h:" <<atan2( FACE_H, head3d.depth )<<endl;
+	    top.x = head2d.x - diff_w;
+	    top.y = head2d.y - diff_h;
+
+	    bottom.x = head2d.x + diff_w;
+	    bottom.y = head2d.y + diff_h;
+	    /*
+	    cout << "cut (" << cut.x << "," << cut.y << ")"<<endl;
 	    if( cut.x < 0 )
 	      cut.x = 0;
-	    else if( cut.x > cv_ptr->image.cols-diff_w*2 )
-	      cut.x = cv_ptr->image.cols-diff_w*2;
+	    else if( cut.x >= (cv_ptr->image.cols - diff_w*2) )
+	      cut.x = cv_ptr->image.cols-diff_w*2-1;
 
 	    if( cut.y < 0 )
 	      cut.y = 0;
-	    else if( cut.y > cv_ptr->image.rows-diff_h*2 )
-	      cut.y = cv_ptr->image.rows-diff_h*2;
+	    else if( cut.y >= (cv_ptr->image.rows - diff_h*2) )
+	      cut.y = cv_ptr->image.rows-diff_h*2-1;
+	    */
+	    top.x = max(0, top.x);
+	    top.y = max(0, top.y);
+	    bottom.x = min(cv_ptr->image.cols-1, bottom.x);
+	    bottom.y = min(cv_ptr->image.rows-1, bottom.y);
 
-	    Mat cutRgbImage(cv_ptr->image, cv::Rect(cut.x, cut.y, diff_w*2, diff_h*2));
+	    if (( top.x > bottom.x || top.y > bottom.y)||( top.x == bottom.x || top.y == bottom.y))
+	      continue;
+	     
+	    
 
-	    Mat rgbImage;
-	    if( cutRgbImage.cols > 1280 || cutRgbImage.rows > 1024 )
+	    cout //<< "depth: "<< head3d.depth 
+		 << "(" << top.x << "," << top.y << ")"
+		 << "-"
+		 << "(" << bottom.x << "," << bottom.y << ")"<<endl;
+	    cout << "diff:" << "(" << diff_w << "," << diff_h<< ")" << endl;
+	    cout << "image:" << "(" << cv_ptr->image.cols << "," << cv_ptr->image.rows << ")" << endl;
+	    Mat cutRgbImage;
+	    try
 	      {
-		cv::resize( rgbImage, cutRgbImage, cv::Size(1280, 1024) );
+		cutRgbImage = Mat(cv_ptr->image, cv::Rect(top, bottom));
+	      }
+	    catch(cv_bridge::Exception& e)
+	      {
+		ROS_ERROR("cv_bridge exception: %s",e.what());
+	      }
+	    Mat rgbImage = cutRgbImage.clone();
+	    if( rgbImage.cols > 1280 )
+	      {
+		cv::resize( rgbImage, rgbImage, cv::Size(1280, cutRgbImage.rows*1280/cutRgbImage.cols) );	
+	      }
+	    if( rgbImage.rows > 1024 )
+	      {
+		cv::resize( rgbImage, rgbImage, cv::Size(cutRgbImage.cols*1024/cutRgbImage.rows , 1024) );
 	      }	
-	    else
-	      {
-		rgbImage = cutRgbImage;
-	      }   
+
+	   
+	    //rgbImage = cutRgbImage;
+	     
 
 	    Mat grayImage;	   
 	    cv::cvtColor(rgbImage,grayImage,CV_BGR2GRAY);
 
 	    //test
-	    cv::rectangle( cv_ptr->image, cv::Point(cut.x, cut.y),
-			   cv::Point(cut.x+diff_w*2, cut.y+diff_h*2),
+	    cv::rectangle( cv_ptr->image, top,
+			   bottom,
 			   cv::Scalar(0,200,0), 5, 8);
 	    
 	    try
@@ -203,21 +245,21 @@ public:
 		  {
 		    humans_msgs::Face face_msg;
 		    humans_msgs::Body body_msg;
-		    bool p_ok = 0;
-		    JsonToMsg::face(v, &face_msg, cut.x, cut.y, &p_ok);		    
+		    bool p_ok = false;
+		    JsonToMsg::face(v, &face_msg, top.x, top.y, &p_ok);		    
 		    MsgToMsg::bodyToBody(kinect->human[i].body, &body_msg);
 		    
 		    if( p_ok )
 		      {
+			++okao_i;
 			humans_msgs::Human h;
 			h.body = body_msg;
 			h.face.persons.resize( OKAO );
 			h.face = face_msg;
 			okao_human.human.push_back( h );
-			++p_i;
 			cv::Point lt(face_msg.position.lt.x, face_msg.position.lt.y);
 			cv::Point rb(face_msg.position.rb.x, face_msg.position.rb.y);
-			cv::Point rb_out(cut.x+diff_w*2, cut.y+diff_h*2);
+			cv::Point rb_out = bottom;
 			cv::Scalar red(0,0,200);
 			cv::Scalar green(0,200,0);
 			cv::rectangle( cv_ptr->image, lt, rb, red, 5, 8);
@@ -234,10 +276,15 @@ public:
 			stack.request.name = face_msg.persons[0].name;
 			stack.request.laboratory = face_msg.persons[0].laboratory;
 			stack.request.grade = face_msg.persons[0].grade;
-			if ( client.call(stack) )
-			  cout << "service success!" << endl;
-			else
+			if ( !client.call(stack) )
 			  cout << "service missing!" << endl;	
+		      }
+		    else
+		      {
+			++no_okao_i;
+			humans_msgs::Human h;
+			h.body = body_msg;
+			no_okao_human.human.push_back( h );
 		      }
 		  }	       
 	      }    
@@ -248,18 +295,22 @@ public:
 	      }	    
 	  }
 	//パブリッシュ
-	okao_human.num = p_i;
-	okao_human.header.stamp = ros::Time::now();
+	okao_human.num = okao_i;
+	no_okao_human.num = no_okao_i;
+	okao_human.header.stamp = no_okao_human.header.stamp = ros::Time::now();
 	okao_human.header.frame_id = "okao";
-	okaoData_pub_.publish(okao_human);
+	no_okao_human.header.frame_id = "no_okao";
+	discovery_pub_.publish(okao_human);
+	undiscovered_pub_.publish(no_okao_human);
 	image_pub_.publish(cv_ptr->toImageMsg());
 	//cv::imshow(OPENCV_WINDOW, cv_ptr->image);
 	//cv::waitKey(1);
       }
     catch(cv_bridge::Exception& e)
       {
+	cout << "koko" << endl;
 	ROS_ERROR("cv_bridge exception: %s",e.what());
-	return;
+	//return;
       } 
   }
   
@@ -267,7 +318,8 @@ private:
   ros::NodeHandle nh_;
   image_transport::ImageTransport it_;
 
-  ros::Publisher okaoData_pub_;
+  ros::Publisher discovery_pub_;
+  ros::Publisher undiscovered_pub_; 
   image_transport::Publisher image_pub_;
  
   zmq::context_t context;

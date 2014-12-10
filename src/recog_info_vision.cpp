@@ -1,4 +1,7 @@
 /*
+2014.12.8---------------
+同期
+
 2014.6.2-----------------
 okao_recog_vision
 openNiTE2_8の画像とpeople_recognize3_1のヒストグラムを噛ました人物データを
@@ -17,7 +20,13 @@ mapで名前も出せるようにする
 */
 
 #include <ros/ros.h>
+
+#include <message_filters/subscriber.h>
+#include <message_filters/synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
 #include <image_transport/image_transport.h>
+#include <image_transport/subscriber_filter.h>
+
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -43,30 +52,29 @@ using namespace std;
 static const std::string OPENCV_WINDOW = "recog Image window";
 
 
-class ImageConverter
-{
-  ros::NodeHandle nh_;
-  image_transport::ImageTransport it_;
-  image_transport::Subscriber recog_image_sub_;
-  //image_transport::Publisher image_pub_;
-  
+class RIVision
+{  
 public:
-  ImageConverter()
-    : it_(nh_)
+  RIVision()
+    : it_(nh_),
+    image_sub_( it_, "/camera/image/color", 100 ),
+    humans_sub_( nh_, "/humans/RecogInfo", 100 ),
+    sync( MySyncPolicy( 10 ), image_sub_, humans_sub_ )
   {
-
-    recog_image_sub_ = it_.subscribe("/camera/image/color", 1, 
-      &ImageConverter::imageCb, this);
+    sync.registerCallback( boost::bind( &RIVision::imageCb, this, _1, _2 ) );
+    image_pub_ = it_.advertise("/camera/image/recog_info",1);
    
     cv::namedWindow(OPENCV_WINDOW);
   }
 
-  ~ImageConverter()
+  ~RIVision()
   {
     cv::destroyWindow(OPENCV_WINDOW);
   }
 
-  void imageCb(const sensor_msgs::ImageConstPtr& msg)
+  void imageCb(
+	       const sensor_msgs::ImageConstPtr& msg,
+	       const humans_msgs::HumansConstPtr& okao_data)
   {	
     cv_bridge::CvImagePtr cv_ptr;
     try
@@ -79,9 +87,6 @@ public:
       return;
     }
 
-    //okao_clientから顔の位置をサブスクライブ
-    humans_msgs::HumansConstPtr okao_data = ros::topic::waitForMessage<humans_msgs::Humans>("/humans/RecogInfo");
-
     ros::ServiceClient okaoStack = nh_.serviceClient<okao_client::OkaoStack>("okao_stack");
     okao_client::OkaoStack stack;
 
@@ -89,15 +94,15 @@ public:
     // Draw an example circle on the video stream
     for(int i= 0; i<okao_data->num; i++)
       {
-	
-	double lt_x = okao_data->human[i].face.position.lt.x;
-	double lt_y = okao_data->human[i].face.position.lt.y;
-	double rb_x = okao_data->human[i].face.position.rb.x;
-	double rb_y = okao_data->human[i].face.position.rb.y;
+	cv::Scalar red(0,0,200);
+	cv::Point lt(okao_data->human[i].face.position.lt.x,
+	       okao_data->human[i].face.position.lt.y);
+	cv::Point rb(okao_data->human[i].face.position.rb.x,
+		      okao_data->human[i].face.position.rb.y);
 	cv::rectangle(cv_ptr->image,
-		      cv::Point(lt_x, lt_y), 
-		      cv::Point(rb_x, rb_y),
-		      CV_RGB(255,0,0));
+		      lt, 
+		      rb,
+		      red, 5, 8);
 
 	stack.request.rule = "req";
 	stack.request.okao_id = okao_data->human[i].max_okao_id;
@@ -109,23 +114,34 @@ public:
 	idAndName = idAndNameStream.str();	    
 	cout <<"recog[ "<<i<<" ]: " << idAndName << endl;
 	cv::putText(cv_ptr->image, idAndName,
-		    cv::Point(rb_x, rb_y),
-		    FONT_HERSHEY_SIMPLEX,2.5, cv::Scalar(0,0,255), 2, CV_AA);
+		    rb,
+		    FONT_HERSHEY_SIMPLEX, 2.5, red, 2, CV_AA);
 	
       }
-    // Update GUI Window
-    cv::imshow(OPENCV_WINDOW, cv_ptr->image);
-    cv::waitKey(1);
-    
-    // Output modified video stream
-    //image_pub_.publish(cv_ptr->toImageMsg());
+    image_pub_.publish(cv_ptr->toImageMsg());
   }
+private:
+  ros::NodeHandle nh_;
+  image_transport::ImageTransport it_;
+  image_transport::Publisher image_pub_;
+
+  typedef image_transport::SubscriberFilter ImageSubscriber;
+  typedef message_filters::Subscriber< humans_msgs::Humans > HumansSubscriber;
+  
+  ImageSubscriber image_sub_;
+  HumansSubscriber humans_sub_;
+  
+  typedef message_filters::sync_policies::ApproximateTime<
+    sensor_msgs::Image, humans_msgs::Humans
+    > MySyncPolicy;
+  
+  message_filters::Synchronizer< MySyncPolicy > sync;
 };
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "recog_image");
-  ImageConverter ic;
+  ros::init(argc, argv, "recog_info_vision");
+  RIVision ic;
   ros::spin();
   return 0;
 }
