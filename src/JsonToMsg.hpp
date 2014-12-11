@@ -20,7 +20,8 @@ public:
 
 namespace JsonToMsg{
 
-  void face(picojson::value v, humans_msgs::Face *okao, double cx, double cy, bool *p_ok)
+  void face(picojson::value v, humans_msgs::Face *okao, 
+	    double cx, double cy, bool *p_ok)
   {  
     int pos[4];
     picojson::object& obj = v.get<picojson::object>();
@@ -37,28 +38,36 @@ namespace JsonToMsg{
 		picojson::object& person_obj = it->get<picojson::object>();
 		
 		//顔の位置のとりだし
-		picojson::array pos_array = person_obj["position"].get<picojson::array>();
+		picojson::array pos_array = 
+		  person_obj["position"].get<picojson::array>();
 		for(int i = 0; i < 4; ++i)
 		  {
 		    pos[i] = (int)pos_array[i].get<double>();
 		  }
 		
 		//人物ID,信頼度の取り出し
-		picojson::array id_array = person_obj["id"].get<picojson::array>();
-		picojson::array db_info_array = person_obj["db_info"].get<picojson::array>();
+		picojson::array id_array = 
+		  person_obj["id"].get<picojson::array>();
+		picojson::array db_info_array = 
+		  person_obj["db_info"].get<picojson::array>();
 		
 		double tmp_id[3], tmp_conf[3]; 
 		std::string tmp_name[3], tmp_grade[3], tmp_laboratory[3];
 		
 		for(int n = 0; n < OKAO; ++n)
 		  {
-		    picojson::array id_array_array = id_array[n].get<picojson::array>();
+		    picojson::array id_array_array = 
+		      id_array[n].get<picojson::array>();
 		    tmp_id[n] = (int)id_array_array[0].get<double>();
 		    tmp_conf[n] = (int)id_array_array[1].get<double>();
-		    picojson::object& db_info_obj = db_info_array[n].get<picojson::object>();
-		    tmp_name[n] = db_info_obj["name"].get<std::string>();
-		    tmp_grade[n] = db_info_obj["grade"].get<std::string>();
-		    tmp_laboratory[n] = db_info_obj["laboratory"].get<std::string>();		 
+		    picojson::object& db_info_obj = 
+		      db_info_array[n].get<picojson::object>();
+		    tmp_name[n] = 
+		      db_info_obj["name"].get<std::string>();
+		    tmp_grade[n] = 
+		      db_info_obj["grade"].get<std::string>();
+		    tmp_laboratory[n] = 
+		      db_info_obj["laboratory"].get<std::string>();		 
 		  }			
 		//一人目の信頼度を利用する
 		if(tmp_conf[0] < 200)

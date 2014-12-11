@@ -5,6 +5,8 @@
 
 
 #pragma
+#include <string>
+#include <iostream>
 #include <humans_msgs/Humans.h>
 #include <humans_msgs/Body.h>
 #include <humans_msgs/Face.h>
@@ -15,6 +17,8 @@
 
 #define JOINTS 25
 #define OKAO 3
+
+//using namespase std;
 
 namespace MsgToMsg{
 
@@ -28,17 +32,28 @@ namespace MsgToMsg{
     
     for( int i = 0; i < JOINTS; ++i )
       {
-	dst->joints[i].joint_name = src.joints[i].joint_name;
-	dst->joints[i].tracking_state = src.joints[i].tracking_state;
-	dst->joints[i].position_color_space.x = src.joints[i].position_color_space.x;
-	dst->joints[i].position_color_space.y = src.joints[i].position_color_space.y;
-	dst->joints[i].position.x = src.joints[i].position.x;
-	dst->joints[i].position.y = src.joints[i].position.y;
-	dst->joints[i].position.z = src.joints[i].position.z;
-	dst->joints[i].orientation.x = src.joints[i].orientation.x;
-	dst->joints[i].orientation.y = src.joints[i].orientation.y;
-	dst->joints[i].orientation.z = src.joints[i].orientation.z;
-	dst->joints[i].orientation.w = src.joints[i].orientation.w;
+	dst->joints[i].joint_name 
+	  = src.joints[i].joint_name;
+	dst->joints[i].tracking_state 
+	  = src.joints[i].tracking_state;
+	dst->joints[i].position_color_space.x 
+	  = src.joints[i].position_color_space.x;
+	dst->joints[i].position_color_space.y 
+	  = src.joints[i].position_color_space.y;
+	dst->joints[i].position.x 
+	  = src.joints[i].position.x;
+	dst->joints[i].position.y 
+	  = src.joints[i].position.y;
+	dst->joints[i].position.z 
+	  = src.joints[i].position.z;
+	dst->joints[i].orientation.x 
+	  = src.joints[i].orientation.x;
+	dst->joints[i].orientation.y 
+	  = src.joints[i].orientation.y;
+	dst->joints[i].orientation.z 
+	  = src.joints[i].orientation.z;
+	dst->joints[i].orientation.w 
+	  = src.joints[i].orientation.w;
       } 
   }
 
@@ -52,17 +67,28 @@ namespace MsgToMsg{
     
     for( int i = 0; i < JOINTS; ++i )
       {
-	dst->body.joints[i].joint_name = src.joints[i].joint_name;
-	dst->body.joints[i].tracking_state = src.joints[i].tracking_state;
-	dst->body.joints[i].position_color_space.x = src.joints[i].position_color_space.x;
-	dst->body.joints[i].position_color_space.y = src.joints[i].position_color_space.y;
-	dst->body.joints[i].position.x = src.joints[i].position.x;
-	dst->body.joints[i].position.y = src.joints[i].position.y;
-	dst->body.joints[i].position.z = src.joints[i].position.z;
-	dst->body.joints[i].orientation.x = src.joints[i].orientation.x;
-	dst->body.joints[i].orientation.y = src.joints[i].orientation.y;
-	dst->body.joints[i].orientation.z = src.joints[i].orientation.z;
-	dst->body.joints[i].orientation.w = src.joints[i].orientation.w;
+	dst->body.joints[i].joint_name 
+	  = src.joints[i].joint_name;
+	dst->body.joints[i].tracking_state 
+	  = src.joints[i].tracking_state;
+	dst->body.joints[i].position_color_space.x 
+	  = src.joints[i].position_color_space.x;
+	dst->body.joints[i].position_color_space.y 
+	  = src.joints[i].position_color_space.y;
+	dst->body.joints[i].position.x 
+	  = src.joints[i].position.x;
+	dst->body.joints[i].position.y 
+	  = src.joints[i].position.y;
+	dst->body.joints[i].position.z 
+	  = src.joints[i].position.z;
+	dst->body.joints[i].orientation.x 
+	  = src.joints[i].orientation.x;
+	dst->body.joints[i].orientation.y 
+	  = src.joints[i].orientation.y;
+	dst->body.joints[i].orientation.z 
+	  = src.joints[i].orientation.z;
+	dst->body.joints[i].orientation.w 
+	  = src.joints[i].orientation.w;
       } 
 
   }
@@ -95,30 +121,27 @@ namespace MsgToMsg{
 
   } 
 
-  void transformHead(geometry_msgs::Point src, geometry_msgs::PointStamped *dst)
+  void transformHead(geometry_msgs::PointStamped src, 
+		     geometry_msgs::PointStamped *dst)
   {
-    geometry_msgs::PointStamped ps;
-    ps.header.stamp = ros::Time();
-    ps.header.frame_id = "camera_link";
-    ps.point.x = src.x;
-    ps.point.y = src.y;
-    ps.point.z = src.z;
     tf::TransformListener tl;
-    //tl.waitForTransform("map", "camera_link", ros::Time(), ros::Duration(1.0));
     try
       {
 	//notice ros::time!!
-	tl.waitForTransform("map", "camera_link", ros::Time(), ros::Duration(5.0));
-	tl.transformPoint("map", ros::Time(), ps, "camera_link", *dst);
+	tl.waitForTransform(dst->header.frame_id, src.header.frame_id, 
+			    ros::Time(), ros::Duration(5.0));
+	tl.transformPoint(dst->header.frame_id, ros::Time(), 
+			  src, src.header.frame_id, *dst);
       }
     catch(tf::TransformException& ex)
       {
-	ROS_ERROR("Received an exception trying to transform a point /camera_link to /map: %s",ex.what());
+	ROS_ERROR("Received an exception trying to transform a point to /map: %s", 
+		  ex.what());
       }
 
   }
 
-  void transformJoint(humans_msgs::Joints src, humans_msgs::Joints *dst)
+  void transformJoint(humans_msgs::Joints src,  humans_msgs::Joints *dst)
   {
     tf::TransformListener tflistener;
 
@@ -135,8 +158,10 @@ namespace MsgToMsg{
 
     try
       {
-	tflistener.waitForTransform("map", "camera_link", ros::Time(), ros::Duration(5.0));
-	tflistener.transformPose("map",ros::Time::now(), srcJoint, "camera_link", dstJoint); 
+	tflistener.waitForTransform("map", "camera_link", 
+				    ros::Time(), ros::Duration(5.0));
+	tflistener.transformPose("map",ros::Time::now(), 
+				 srcJoint, "camera_link", dstJoint); 
 	
 	dst->position.x = dstJoint.pose.position.x;
 	dst->position.y = dstJoint.pose.position.y;
@@ -148,7 +173,7 @@ namespace MsgToMsg{
       }
     catch(tf::TransformException& ex)
       {
-	ROS_ERROR("Received an exception trying to transform a point /camera_link to /map: %s",ex.what());
+	ROS_ERROR("Received an exception trying to transform a point (no!) to /map: %s", ex.what());
       }
   }
 

@@ -69,7 +69,13 @@ public:
 	m.type = m.SPHERE;
 	m.action = 0;
 	geometry_msgs::PointStamped dst;
-	MsgToMsg::transformHead(track->human[i].body.joints[3].position, &dst); 
+	dst.header.frame_id = "map";
+	dst.header.stamp = map_time;
+	geometry_msgs::PointStamped src;
+	src.point =  track->human[i].body.joints[3].position;
+	src.header.frame_id = track->header.frame_id;
+	src.header.stamp = map_time;
+	MsgToMsg::transformHead(src, &dst); 
 	cout<< "o[ "<< i <<" ](x, y) = ("<< 
 	  track->human[i].body.joints[3].position.x << ", " << 
 	  track->human[i].body.joints[3].position.y << 

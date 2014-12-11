@@ -71,7 +71,7 @@ class MyClass
 {
 public:
   MyClass() :
-    it_(nh_),  
+    it_(nh_),
     image_sub_( it_, "/camera/image/color", 100 ),
     humans_sub_( nh_, "/humans/KinectV2", 100 ),
     sync( MySyncPolicy( 100 ), image_sub_, humans_sub_ )
@@ -235,7 +235,7 @@ public:
 		// 受信
 		OkaoServer::ReplyMessage repMsg;
 		OkaoServer::recvReplyMessage(*responder, &repMsg);
-		//std::cout << "repMsg.okao: " << repMsg.okao << std::endl;
+		std::cout << "repMsg.okao: " << repMsg.okao << std::endl;
 	    	
 		const char* json = repMsg.okao.c_str();
 		picojson::value v;
@@ -298,8 +298,8 @@ public:
 	okao_human.num = okao_i;
 	no_okao_human.num = no_okao_i;
 	okao_human.header.stamp = no_okao_human.header.stamp = ros::Time::now();
-	okao_human.header.frame_id = "okao";
-	no_okao_human.header.frame_id = "no_okao";
+	okao_human.header.frame_id =  kinect->header.frame_id;
+	no_okao_human.header.frame_id = kinect->header.frame_id;
 	discovery_pub_.publish(okao_human);
 	undiscovered_pub_.publish(no_okao_human);
 	image_pub_.publish(cv_ptr->toImageMsg());
