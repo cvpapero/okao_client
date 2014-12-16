@@ -1,6 +1,26 @@
 /*
 2014.11.1--------------------------------
 
+考えること
+1.d_idごとにヒストグラムを作るか
+2.それともtracking_idごとにヒストグラムを作るか
+
+たぶん、1のほうがいいと思う
+なぜなら、めんどくさい設定がいらない
+ただし、すべてのd_idについてのヒストグラムを持っているわけにはいかないので、
+どのタイミングでfreeにするか考える
+		//逆に、どのd_idが呼ばれなかったかもチェックする
+		//そうすれば、終わったあとにそのtracking_id_bufを初期化すればよい
+
+とりあえず作ってみよう
+tracking_id = 0 のときは動かないようにする
+
+アルゴリズム
+1.kinectv2とOKAOからデータを受け取る
+2.KinectV2のTracking_id！＝０なら処理を行う　//もし＝０ならlost_frameをインクリメントする
+3.認識してる人物数だけループ
+  4.Tracking_idをみる。前回、みていたかどうかをチェックする 
+
 
 */
 
@@ -28,7 +48,6 @@ class RecogInfo
 private:
   ros::NodeHandle nh;
   ros::Publisher recog_pub_;
-  ros::Publisher path_pub_;
   ros::Subscriber bind_sub_;
   map<long, int> tracking_id_buf;
   map<int, map<int, int> > hist;
@@ -36,18 +55,15 @@ private:
 public:
   RecogInfo()
   {
-    recog_pub_ = 
-      nh.advertise<humans_msgs::Humans>("/humans/RecogInfo", 1);
-    path_pub_ = 
-      nh.advertise<humans_msgs::Humans>("/humans/HumansPath", 1);
-    bind_sub_ = 
-      nh.subscribe("/humans/OkaoServer", 1, &RecogInfo::callback, this);
+    recog_pub_ = nh.advertise<humans_msgs::Humans>("/humans/RecogInfo", 1);
+    bind_sub_ = nh.subscribe("/humans/BindData", 1, &RecogInfo::callback, this);
   }
 
   void histogram(int d_id, int *o_id, int *o_conf, int *maxOkaoId, int *maxHist)
   {
     for(int i = 0; i < OKAO; ++i)
       {
+	//hist[d_id][o_id[i]] += o_conf[i]/100;
 	hist[d_id][o_id[i]] = hist[d_id][o_id[i]] + o_conf[i]/100;
       }
  
@@ -77,6 +93,7 @@ public:
 
     int p_num = bind->num;
     int maxOkaoId = 0, maxHist = 0;
+    //bool d_id_buf[BODY_MAX] = {false};//いま見ているd_idの保持（最大６人まで）
 
     humans_msgs::Humans recog;
     recog.human.resize(p_num);
@@ -108,27 +125,19 @@ public:
 		o_conf[i] = bind->human[p_i].face.persons[i].conf;
 	      }
 	    histogram( (d_id) , o_id, o_conf, &maxOkaoId, &maxHist );
-	    cout << "d_id: "<<d_id << ", tracking_id: "
-		 << tracking_id << " ---> max id: "
-		 << maxOkaoId <<", max hist: " << maxHist << endl;
+	    cout << "d_id: "<<d_id << ", tracking_id: "<< tracking_id << " ---> max id: "<< maxOkaoId << ", max hist: " << maxHist << endl;
 
-	    MsgToMsg::bodyAndFaceToMsg(bind->human[p_i].body,
-				       bind->human[p_i].face, 
-				       &recog.human[p_i]);
+	    MsgToMsg::bodyAndFaceToMsg(bind->human[p_i].body,bind->human[p_i].face, &recog.human[p_i]);
 
-	    ros::Time t = bind->header.stamp;
-	    geometry_msgs::PointStamped h_point;
-	    h_point.point.x = bind->human[p_i].body.joints[3].position.x;
-	    h_point.point.y = bind->human[p_i].body.joints[3].position.y;
-	    h_point.point.z = bind->human[p_i].body.joints[3].position.z;
-	    h_point.header.stamp = t;
-	    h_point.header.frame_id = bind->header.frame_id;
+	    geometry_msgs::Point h_point;
+	    h_point.x = bind->human[p_i].body.joints[3].position.x;
+	    h_point.y = bind->human[p_i].body.joints[3].position.y;
+	    h_point.z = bind->human[p_i].body.joints[3].position.z;
 
 	    geometry_msgs::PointStamped pst;
-	    pst.header.stamp = t;
+	    pst.header.stamp = ros::Time::now();
 	    pst.header.frame_id = "/map";
 
-	    std::string camera_frame = bind->header.frame_id;
 	    MsgToMsg::transformHead( h_point, &pst );
 
 	    recog.human[p_i].d_id = d_id;
@@ -156,10 +165,8 @@ public:
 	  }
       }
     */    
-    recog.header.stamp = ros::Time::now();
-    recog.header.frame_id = "recog";
+
     recog_pub_.publish(recog);
-    path_pub_.publish(recog);
   }
 };
 
