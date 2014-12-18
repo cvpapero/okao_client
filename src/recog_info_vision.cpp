@@ -110,7 +110,9 @@ public:
 
 	std::stringstream idAndNameStream;
 	std::string idAndName;
-	idAndNameStream << okao_data->human[i].d_id <<","<< stack.response.name << ","<< okao_data->human[i].max_hist;
+	idAndNameStream << okao_data->human[i].d_id <<","
+			<< stack.response.name << ","
+			<< okao_data->human[i].max_hist;
 	idAndName = idAndNameStream.str();	    
 	cout <<"recog[ "<<i<<" ]: " << idAndName << endl;
 	cv::putText(cv_ptr->image, idAndName,

@@ -1,7 +1,7 @@
 #人物位置だけ
 string rule
-int32 d_id
 int32 okao_id
---------- 
+---------
+Time res_t
 float64 res_x
 float64 res_y

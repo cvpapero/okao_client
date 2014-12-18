@@ -174,32 +174,14 @@ find_library(ZMQ_LIBRARIE
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(OkaoClient4 src/OkaoClient4.cpp)
-target_link_libraries(OkaoClient4 ${catkin_LIBRARIES} ${OpenCV_LIBS} ${ZMQ_LIBRARIE} msgpack)
-
-#add_executable(OkaoClient3 src/OkaoClient3.cpp)
-#target_link_libraries(OkaoClient3 ${catkin_LIBRARIES} ${OpenCV_LIBS} ${ZMQ_LIBRARIE} msgpack)
-
-#add_executable(OkaoClientSub1 src/OkaoClientSub1.cpp)
-#target_link_libraries(OkaoClientSub1 ${catkin_LIBRARIES} ${OpenCV_LIBS} ${ZMQ_LIBRARIE} msgpack)
-#add_executable(OkaoClientSub2 src/OkaoClientSub2.cpp)
-#target_link_libraries(OkaoClientSub2 ${catkin_LIBRARIES} ${OpenCV_LIBS} ${ZMQ_LIBRARIE} msgpack)
-#add_executable(OkaoClientSub3 src/OkaoClientSub3.cpp)
-#target_link_libraries(OkaoClientSub3 ${catkin_LIBRARIES} ${OpenCV_LIBS} ${ZMQ_LIBRARIE} msgpack)
-#add_executable(OkaoClientSub4 src/OkaoClientSub4.cpp)
-#target_link_libraries(OkaoClientSub4 ${catkin_LIBRARIES} ${OpenCV_LIBS} ${ZMQ_LIBRARIE} msgpack)
+add_executable(OkaoClient src/OkaoClient.cpp)
+target_link_libraries(OkaoClient ${catkin_LIBRARIES} ${OpenCV_LIBS} ${ZMQ_LIBRARIE} msgpack)
 
 add_executable(okao_stack src/okao_stack.cpp)
 target_link_libraries(okao_stack ${catkin_LIBRARIES})
 
-#add_executable(kinect_okao_bind2 src/kinect_okao_bind2.cpp)
-#target_link_libraries(kinect_okao_bind2 ${catkin_LIBRARIES})
-
-#add_executable(kinect_okao_bind src/kinect_okao_bind.cpp)
-#target_link_libraries(kinect_okao_bind ${catkin_LIBRARIES})
-
-add_executable(people_recog_info2 src/people_recog_info2.cpp)
-target_link_libraries(people_recog_info2 ${catkin_LIBRARIES})
+add_executable(people_recog_info src/people_recog_info.cpp)
+target_link_libraries(people_recog_info ${catkin_LIBRARIES})
 
 add_executable(people_position_server src/people_position_server.cpp)
 target_link_libraries(people_position_server ${catkin_LIBRARIES})
@@ -207,14 +189,14 @@ target_link_libraries(people_position_server ${catkin_LIBRARIES})
 add_executable(recog_info_vision src/recog_info_vision.cpp)
 target_link_libraries(recog_info_vision ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
-add_executable(face_mapping2 src/face_mapping2.cpp)
-target_link_libraries(face_mapping2 ${catkin_LIBRARIES})
+add_executable(face_mapping src/face_mapping.cpp)
+target_link_libraries(face_mapping ${catkin_LIBRARIES})
 
 add_executable(tracking_points src/tracking_points.cpp)
 target_link_libraries(tracking_points ${catkin_LIBRARIES})
 
-add_executable(humans_path2 src/humans_path2.cpp)
-target_link_libraries(humans_path2 ${catkin_LIBRARIES})
+#add_executable(humans_pass2 src/humans_pass2.cpp)
+#target_link_libraries(humans_pass2 ${catkin_LIBRARIES})
 
 add_executable(face_detector src/face_detector.cpp)
 target_link_libraries(face_detector ${catkin_LIBRARIES} ${OpenCV_LIBS})
