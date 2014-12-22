@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf
   visualization_msgs
+  camera_info_manager
 )
 find_package(OpenCV REQUIRED)
 ## System dependencies are found with CMake's conventions
@@ -90,7 +91,8 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES okao_client
-#  CATKIN_DEPENDS cv_bridge geometry_msgs image_transport roscpp rospy sensor_msgs std_msgs tf visualization_msgs
+  CATKIN_DEPENDS cv_bridge geometry_msgs image_transport roscpp rospy sensor_msgs std_msgs tf visualization_msgs camera_info_manager
+
 #  DEPENDS system_lib
 )
 
@@ -192,11 +194,17 @@ target_link_libraries(people_position_client ${catkin_LIBRARIES})
 add_executable(recog_info_vision src/recog_info_vision.cpp)
 target_link_libraries(recog_info_vision ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
+add_executable(depth_to_laser src/depth_to_laser.cpp)
+target_link_libraries(depth_to_laser ${catkin_LIBRARIES} ${OpenCV_LIBS})
+
 add_executable(face_mapping src/face_mapping.cpp)
 target_link_libraries(face_mapping ${catkin_LIBRARIES})
 
 add_executable(tracking_points src/tracking_points.cpp)
 target_link_libraries(tracking_points ${catkin_LIBRARIES})
+
+add_executable(position_sub src/position_sub.cpp)
+target_link_libraries(position_sub ${catkin_LIBRARIES})
 
 #add_executable(humans_pass2 src/humans_pass2.cpp)
 #target_link_libraries(humans_pass2 ${catkin_LIBRARIES})
