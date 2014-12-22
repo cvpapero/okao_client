@@ -42,7 +42,7 @@ public:
 	     << info->human[i].body.joints[3].position.x << " , " 
 	     << info->human[i].body.joints[3].position.y << " , " 
 	     << info->human[i].body.joints[3].position.z << " ) , POS2D = ( "
-	     << info->human[i].body.joints[3].position_color_space.x << " , "
+	     << info->human[i].body.joints[3].position_color_space.x - 480<< " , "
 	     << info->human[i].body.joints[3].position_color_space.y << " )" <<endl;
       }
   }

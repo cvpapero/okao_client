@@ -185,6 +185,9 @@ target_link_libraries(okao_stack ${catkin_LIBRARIES})
 add_executable(people_recog_info src/people_recog_info.cpp)
 target_link_libraries(people_recog_info ${catkin_LIBRARIES})
 
+add_executable(people_recog_info2 src/people_recog_info2.cpp)
+target_link_libraries(people_recog_info2 ${catkin_LIBRARIES})
+
 add_executable(people_position_server src/people_position_server.cpp)
 target_link_libraries(people_position_server ${catkin_LIBRARIES})
 
