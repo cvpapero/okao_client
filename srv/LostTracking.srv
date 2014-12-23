@@ -1,0 +1,3 @@
+string rule
+---------
+uint64[] lost_tracking_id

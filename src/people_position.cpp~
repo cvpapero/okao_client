@@ -1,0 +1,33 @@
+/*
+登録された人物の現在位置を出力するモジュール
+かつ
+見えなくなった人をresponseする
+
+ */
+
+#include <ros/ros.h>
+#include <iostream>
+#include <sstream>
+#include <vector>
+#include <map>
+
+#include <humans_msgs/Humans.h>
+
+using namespase std;
+
+class PeoplePosition
+{
+private:
+
+
+public:
+
+
+};
+
+int main(int argc, char** argv)
+{
+ros::init(argc, argv, "people_position");
+PeoplePosition
+
+}

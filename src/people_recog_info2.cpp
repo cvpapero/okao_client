@@ -1,4 +1,25 @@
 /*
+2014.12.23--------------------------------
+いかにして初期化するか
+
+もう一つの方法。
+外部モジュールにtracking_IDを集めさせておき、
+人物を認識していないとき、req/res方式で見ていないidを貰い、それを使って消去する
+
+見ていないIDを集めておく
+どうやって集めるか？
+集めた後、人物を認識していないときに初期化処理を行っておく
+
+
+まず、tracking_idについてのヒストグラムとバッファを消去する状況を考えてみる
+それは、前回と同じtracking_idが、今回は入ってこなかったとき、と想定する
+では、その前回と今回の比較のために必要なものは何か
+前回のtracking_idが書かれた記録
+今回のtracking_idが書かれた記録
+前回のtracking_idを、一つずつ、今回のtracking_idのデータベースで検索をかけ、
+存在するなら保持
+存在しないなら初期化
+
 2014.12.22--------------------------------
 初期化処理がまだできていない
 
@@ -52,7 +73,7 @@ private:
 
   map<long, int> tracking_id_buf;
   map<int, map<int, int> > hist;
-  vector<long long> now_tracking_id;
+  //vector<long> now_tracking_id;
 
   typedef message_filters::Subscriber< 
     humans_msgs::Humans > HumansSubscriber; 
@@ -101,11 +122,11 @@ public:
 		)
   {
     humans_msgs::Humans recog;
-
+    vector<long> now_tracking_id;
 
     int okao_num = okao->num;
     int okao_recog_num = 0;
-    //int maxOkaoId = 0, maxHist = 0;
+
     //okaoについての処理
     for( int p_i = 0; p_i < okao_num; ++p_i )
       {
@@ -124,13 +145,9 @@ public:
 		++d_id;
 		tracking_id_buf[tracking_id] = d_id; 
 	      }	 
-	    /*
-	    //今回見ているtracking_idの保持
-	    vector<long long>::iterator eq 
-	      = find( now_tracking_id.begin(), now_tracking_id.end(), tracking_id);
-	    if( eq == now_tracking_id.end() ) 
-	      now_tracking_id.push_back( tracking_id );
-	    */
+
+	    now_tracking_id.push_back( tracking_id );
+
 	    int o_id[OKAO] = {0}, o_conf[OKAO] = {0};
 	    for(int i = 0; i < OKAO; ++i)
 	      {
@@ -188,13 +205,7 @@ public:
 	      {
 		//キーの取得(d_id)
 		d_id = tracking_id_find->second;
-		//今回見ているtracking_idの保持
-		/*
-		vector<long long>::iterator eq 
-		  = find( now_tracking_id.begin(), now_tracking_id.end(), tracking_id);
-		if( eq == now_tracking_id.end() ) 
-		  now_tracking_id.push_back( tracking_id );
-		*/
+
 		//人物情報の取得
 		int o_id[OKAO] = {0}, o_conf[OKAO] = {0};
 		int maxOkaoId = 0, maxHist = 0;
@@ -240,26 +251,35 @@ public:
 	    
 	  }
       }
+    
     /*
     //初期化処理
-    for( int p_i = 0; p_i < now_tracking_id.size(); ++p_i )
+    map< long, int >::iterator past_tracking_id;
+    for(past_tracking_id = tracking_id_buf.begin(); 
+	past_tracking_id != tracking_id_buf.end() ; past_tracking_id++)
       {
-   	int r_id = now_tracking_id[ p_i ];
-    	//cout << "p_i[ " << p_i << " ]: "<<r_id<<endl;
-    	
-	map< long, int >::iterator tracking_id_find = tracking_id_buf.find( r_id );
-
-	if( tracking_id_find == tracking_id_buf.end())
+    	cout << "p_i: "<< past_tracking_id->first << " , ";
+	vector<long>::iterator eq 
+	  = find( now_tracking_id.begin(), now_tracking_id.end(), past_tracking_id->first);
+	if( eq == now_tracking_id.end() ) 
 	  {
-	    cout<<"lost_d_id[ "<< tracking_id_find->second <<" ]" <<endl; 
-	    cout<<"lost_tracking_id[ "<< tracking_id_find->first <<" ]" << endl; 
-	    //hist.clear( tracking_id_find->second );
-	    //tracking_id_buf.clear( r_id );
-	   
+	    //ここでヒストグラムなどの初期化を行う
+	    cout<<"lost_d_id[ "<< past_tracking_id->second <<" ]" <<endl; 
+	    cout<<"lost_tracking_id[ "<< past_tracking_id->first <<" ]" << endl; 
 	  }
-      }
+      }    
     */
- 
+
+    //人物を見つけなかった場合,初期化処理をする
+    if( okao_recog_num + okaoNot_recog_num == 0 )
+      {
+	//見ていないtracking_idのリクエスト
+	/*
+tracking_id_buf.erase(lost_tracking_id);
+hist.erase(lost_d_id);
+	 */
+      }
+
     recog.num = okao_recog_num + okaoNot_recog_num;
     recog.header.stamp = ros::Time::now();
     recog.header.frame_id = "recog";
