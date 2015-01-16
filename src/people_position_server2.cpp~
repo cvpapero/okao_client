@@ -1,0 +1,88 @@
+/*
+2015.1.9----------------
+
+
+ 
+*/
+
+#include <ros/ros.h>
+#include <geometry_msgs/PointStamped.h>
+
+#include <map>
+#include <string>
+#include <sstream>
+#include <iostream>
+#include <time.h>
+
+//オリジナルメッセージ
+#include "humans_msgs/Humans.h"
+#include "humans_msgs/HumanSrv.h"
+//#include "okao_client/OkaoStack.h"
+
+using namespace std;
+
+map<int, humans_msgs::Human> n_DBHuman;
+map<int, humans_msgs::Human> p_DBHuman;
+
+class PeoplePositionServer
+{
+private:
+  ros::NodeHandle n;
+  ros::Subscriber rein_sub_;
+  ros::ServiceServer track_srv_;
+  ros::ServiceServer okao_srv_;
+
+public:
+  PeoplePositionServer()
+  {
+    rein_sub_ = n.subscribe("/humans/RecogInfo", 1, &PeoplePositionServer::callback, this);
+    track_srv_ = n.advertiseService("track_srv", &PeoplePositionServer::resTrackingId, this);
+    okao_srv_ = n.advertiseService("okao_srv", &PeoplePositionServer::resTrackingId, this);
+  }
+
+  void callback(const humans_msgs::HumansConstPtr& rein)
+  {
+
+    if( rein->num == 0 )
+      {
+	//ここで、見えなくなった人物のd_idをパブリッシュしてもいいかも
+	n_DBHuman.clear();
+      }
+    else
+      {
+	for(int i = 0; i < rein->num; ++i)
+	  {
+	    humans_msgs::Human ah;
+	    ah = rein->human[ i ];
+	    n_DBHuman[ i ] = p_DBHuman[ rein->human[ i ].d_id ] = ah;
+	  } 
+      } 
+  }
+
+  bool resTrackingId(humans_msgs::HumanSrv::Request &req,
+		     humans_msgs::HumanSrv::Response &res)
+  {
+    //n_DBHumanについての検索
+
+
+  }
+
+  bool resOkaoId(humans_msgs::HumanSrv::Request &req,
+		 humans_msgs::HumanSrv::Response &res)
+    
+  {
+    //n_DBHumanについての検索
+    //もしそれでもみつからなかったらp_DBHumanから検索する
+    //どのデータベースから見つかったかをラベルづけして返す(.srvに記述しておく)
+
+  }
+
+};
+  
+int main(int argc, char** argv)
+{
+  ros::init(argc, argv, "people_position_server");
+  PeoplePositionServer PPS;
+  ros::spin();
+  return 0;
+}

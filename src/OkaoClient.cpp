@@ -21,6 +21,7 @@
 #include <image_transport/subscriber_filter.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
+#include <geometry_msgs/Point.h>
 //オリジナルのメッセージ
 #include <humans_msgs/Humans.h>
 #include "okao_client/OkaoStack.h"
@@ -58,6 +59,7 @@ static const std::string OPENCV_WINDOW = "OKAO Client Window";
 using namespace cv;
 using namespace std;
 
+/*
 class POS
 {
 public:
@@ -65,7 +67,7 @@ public:
   double y;
   double depth;
 };
-
+*/
 
 class MyClass 
 {
@@ -91,9 +93,12 @@ public:
 	return;
       } 
 
-    image_pub_ = it_.advertise("/camera/image/face_detect",1);
-    discovery_pub_ = nh_.advertise<humans_msgs::Humans>("/humans/OkaoServer",10);
-    undiscovered_pub_ = nh_.advertise<humans_msgs::Humans>("/humans/OkaoServerNot",10);
+    image_pub_ 
+      = it_.advertise("/camera/image/face_detect",1);
+    discovery_pub_ 
+      = nh_.advertise<humans_msgs::Humans>("/humans/OkaoServer",10);
+    undiscovered_pub_ 
+      = nh_.advertise<humans_msgs::Humans>("/humans/OkaoServerNot",10);
     //ウィンドウ
     cv::namedWindow(OPENCV_WINDOW);
   }
@@ -122,25 +127,18 @@ public:
 	cv_ptr = cv_bridge::toCvCopy(imgmsg, sensor_msgs::image_encodings::BGR8);
 	for(int i = 0; i < kinect->num; i++)
 	  {
-	    POS head2d, head3d, neck2d;;
+	    //POS head2d, head3d, neck2d;
 	    Point top, bottom;
+	    geometry_msgs::Point head2d, neck2d;//, top, bottom;
 	    head2d.x = kinect->human[i].body.joints[HEAD].position_color_space.x;	   
 	    head2d.y = kinect->human[i].body.joints[HEAD].position_color_space.y;
 
 	    neck2d.x = kinect->human[i].body.joints[SPINE_S].position_color_space.x;	   
 	    neck2d.y = kinect->human[i].body.joints[SPINE_S].position_color_space.y;
 
-	    //head3d.depth = kinect->human[i].body.joints[HEAD].position.x;
+	    double diff_w =  fabs(head2d.y-neck2d.y);
+	    double diff_h =  fabs(head2d.y-neck2d.y);
 
-	    //double f_horizon = HORIZON * M_PI / 180.0;
-	    //double f_vertical = VERTICAL * M_PI / 180.0;
-	    double diff_w =  fabs(head2d.y-neck2d.y);//cv_ptr->image.cols * atan2( FACE_W, head3d.depth ) / f_horizon;
-	    double diff_h =  fabs(head2d.y-neck2d.y);//cv_ptr->image.rows * atan2( FACE_H, head3d.depth ) / f_vertical;
-
-	    //diff_w = max()
-
-	    //cout<<"atan2 w:" <<atan2( FACE_W, head3d.depth )<<endl;
-	    //cout<<"atan2 h:" <<atan2( FACE_H, head3d.depth )<<endl;
 	    top.x = head2d.x - diff_w;
 	    top.y = head2d.y - diff_h;
 
@@ -166,10 +164,7 @@ public:
 	    if (( top.x > bottom.x || top.y > bottom.y)||( top.x == bottom.x || top.y == bottom.y))
 	      continue;
 	     
-	    
-
-	    cout //<< "depth: "<< head3d.depth 
-		 << "(" << top.x << "," << top.y << ")"
+	    cout << "(" << top.x << "," << top.y << ")"
 		 << "-"
 		 << "(" << bottom.x << "," << bottom.y << ")"<<endl;
 	    cout << "diff:" << "(" << diff_w << "," << diff_h<< ")" << endl;
@@ -186,17 +181,16 @@ public:
 	    Mat rgbImage = cutRgbImage.clone();
 	    if( rgbImage.cols > 1280 )
 	      {
-		cv::resize( rgbImage, rgbImage, cv::Size(1280, cutRgbImage.rows*1280/cutRgbImage.cols) );	
+		cv::resize( rgbImage, rgbImage, 
+			    cv::Size(1280, cutRgbImage.rows*1280/cutRgbImage.cols) );	
 	      }
 	    if( rgbImage.rows > 1024 )
 	      {
-		cv::resize( rgbImage, rgbImage, cv::Size(cutRgbImage.cols*1024/cutRgbImage.rows , 1024) );
+		cv::resize( rgbImage, rgbImage, 
+			    cv::Size(cutRgbImage.cols*1024/cutRgbImage.rows , 1024) );
 	      }	
 
-	   
-	    //rgbImage = cutRgbImage;
-	     
-
+	    //rgbImage = cutRgbImage;	     
 	    Mat grayImage;	   
 	    cv::cvtColor(rgbImage,grayImage,CV_BGR2GRAY);
 
@@ -267,7 +261,7 @@ public:
 			cv::putText( cv_ptr->image, face_msg.persons[0].name, 
 				     rb_out, FONT_HERSHEY_SIMPLEX, 2.5, 
 				     green, 2, CV_AA);
-
+			
 			ros::ServiceClient client = nh_.serviceClient<
 			  okao_client::OkaoStack>("okao_stack");
 			okao_client::OkaoStack stack;
@@ -278,6 +272,7 @@ public:
 			stack.request.grade = face_msg.persons[0].grade;
 			if ( !client.call(stack) )
 			  cout << "service missing!" << endl;	
+			
 		      }
 		    else
 		      {
@@ -307,10 +302,8 @@ public:
 	//cv::waitKey(1);
       }
     catch(cv_bridge::Exception& e)
-      {
-	cout << "koko" << endl;
+      {	
 	ROS_ERROR("cv_bridge exception: %s",e.what());
-	//return;
       } 
   }
   

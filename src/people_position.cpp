@@ -24,7 +24,7 @@
 #include <humans_msgs/Humans.h>
 #include <okao_client/LostTracking.h>
 
-using namespase std;
+using namespace std;
 
 class PeoplePosition
 {

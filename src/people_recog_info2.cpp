@@ -102,7 +102,8 @@ public:
   {
     for(int i = 0; i < OKAO; ++i)
       {
-	hist[d_id][o_id[i]] = hist[d_id][o_id[i]] + o_conf[i]/100;
+	hist[d_id][o_id[i]] 
+	  = hist[d_id][o_id[i]] + o_conf[i]/100;
       }
  
     //最大値のヒストグラムとそのOKAO_IDを出力
@@ -134,7 +135,8 @@ public:
 	long tracking_id = okao->human[ p_i ].body.tracking_id;
 	if( tracking_id )
 	  {
-	    map< long, int >::iterator tracking_id_find = tracking_id_buf.find( tracking_id );
+	    map< long, int >::iterator tracking_id_find 
+	      = tracking_id_buf.find( tracking_id );
 	    if( tracking_id_find !=  tracking_id_buf.end())
 	      {
 		//キーの取得(d_id)
@@ -151,13 +153,16 @@ public:
 	    int o_id[OKAO] = {0}, o_conf[OKAO] = {0};
 	    for(int i = 0; i < OKAO; ++i)
 	      {
-		o_id[i] = okao->human[p_i].face.persons[i].okao_id;
-		o_conf[i] = okao->human[p_i].face.persons[i].conf;
+		o_id[i] 
+		  = okao->human[p_i].face.persons[i].okao_id;
+		o_conf[i] 
+		  = okao->human[p_i].face.persons[i].conf;
 	      }
 	    int maxOkaoId = 0, maxHist = 0;
 	    histogram( (d_id) , o_id, o_conf, &maxOkaoId, &maxHist );
 
-	    cout <<"face found[ " << ros::Time::now() << " ], d_id: "<<d_id << ", tracking_id: "
+	    cout <<"face found[ " << ros::Time::now() 
+		 << " ], d_id: "<<d_id << ", tracking_id: "
 		 << tracking_id << " ---> max id: "
 		 << maxOkaoId <<", max hist: " << maxHist << endl;
 
@@ -170,14 +175,19 @@ public:
 	    
 	    ros::Time t = okao->header.stamp;
 	    geometry_msgs::PointStamped h_point;
-	    h_point.point.x = okao->human[ p_i ].body.joints[ HEAD ].position.x;
-	    h_point.point.y = okao->human[ p_i ].body.joints[ HEAD ].position.y;
-	    h_point.point.z = okao->human[ p_i ].body.joints[ HEAD ].position.z;
-	    h_point.header.stamp = t;
-	    h_point.header.frame_id = okao->header.frame_id;
+	    h_point.point.x 
+	      = okao->human[ p_i ].body.joints[ HEAD ].position.x;
+	    h_point.point.y 
+	      = okao->human[ p_i ].body.joints[ HEAD ].position.y;
+	    h_point.point.z 
+	      = okao->human[ p_i ].body.joints[ HEAD ].position.z;
+	    h_point.header.stamp 
+	      = t;
+	    h_point.header.frame_id 
+	      = okao->header.frame_id;
 	    geometry_msgs::PointStamped pst;
 	    pst.header.stamp = t;
-	    pst.header.frame_id = "/map";
+	    pst.header.frame_id = "map";
 	    std::string camera_frame = okao->header.frame_id;
 	    MsgToMsg::transformHead( h_point, &pst );
 
@@ -200,7 +210,8 @@ public:
 	long tracking_id = okaoNot->human[ p_i ].body.tracking_id;
 	if( tracking_id )
 	  {
-	    map< long, int >::iterator tracking_id_find = tracking_id_buf.find( tracking_id );
+	    map< long, int >::iterator tracking_id_find 
+	      = tracking_id_buf.find( tracking_id );
 	    if( tracking_id_find !=  tracking_id_buf.end())
 	      {
 		//キーの取得(d_id)
@@ -219,15 +230,20 @@ public:
 		//人物位置の更新
 		ros::Time t = okaoNot->header.stamp;
 		geometry_msgs::PointStamped h_point;
-		h_point.point.x = okaoNot->human[ p_i ].body.joints[ HEAD ].position.x;
-		h_point.point.y = okaoNot->human[ p_i ].body.joints[ HEAD ].position.y;
-		h_point.point.z = okaoNot->human[ p_i ].body.joints[ HEAD ].position.z;
-		h_point.header.stamp = t;
-		h_point.header.frame_id = okaoNot->header.frame_id;
+		h_point.point.x 
+		  = okaoNot->human[ p_i ].body.joints[ HEAD ].position.x;
+		h_point.point.y 
+		  = okaoNot->human[ p_i ].body.joints[ HEAD ].position.y;
+		h_point.point.z 
+		  = okaoNot->human[ p_i ].body.joints[ HEAD ].position.z;
+		h_point.header.stamp 
+		  = t;
+		h_point.header.frame_id 
+		  = okaoNot->header.frame_id;
 		
 		geometry_msgs::PointStamped pst;
 		pst.header.stamp = t;
-		pst.header.frame_id = "/map";
+		pst.header.frame_id = "map";
 		
 		std::string camera_frame = okao->header.frame_id;
 		MsgToMsg::transformHead( h_point, &pst );

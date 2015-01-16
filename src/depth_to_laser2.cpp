@@ -1,11 +1,13 @@
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
+#include <image_geometry/pinhole_camera_model.h>
 #include <sensor_msgs/LaserScan.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#define HOR 70
 //static const std::string OPENCV_WINDOW = "Image window";
 using namespace std;
 using namespace cv;
@@ -16,6 +18,7 @@ class ImageConverter
   image_transport::ImageTransport it_;
   image_transport::Subscriber image_sub_;
   ros::Publisher laser_pub_;
+  //image_geometry::PinholeCameraModel cam_model_;
   //image_transport::Publisher image_pub_;
   
 public:
@@ -40,7 +43,7 @@ public:
     cv_bridge::CvImagePtr cv_ptr;
     try
     {
-      cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::MONO16);
+      cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
     }
     catch (cv_bridge::Exception& e)
     {
@@ -53,34 +56,40 @@ public:
 
     ros::Time a = ros::Time::now();
     double min_depth, tmp_depth;
-    int r_start = depthImage.rows / 2;
+    int r_start = 0;//depthImage.rows / 2;
     //int i = 0;
     int deg = 55;
     int max_deg = 70;
     double inc = 0;
+    //uint32_t ranges_size = depthImage.cols;
+    //ls.ranges.assign(ranges_size, std::numeric_limits<float>::quiet_NaN());
+
     for(int c = 0; c < depthImage.cols; ++c)
       { 
-	inc = inc + depthImage.cols/max_deg;
-	min_depth = 255;
+	//inc = inc + depthImage.cols/max_deg;
+	double min_depth = 255, tmp_depth;
 	for(int r = r_start; r < depthImage.rows; r++)
 	  {     
 	    tmp_depth = (int)depthImage.at<uchar>(r,c);
-	    if( (tmp_depth > (50*255/4500)) && (tmp_depth < min_depth) )
+	    if( (tmp_depth > (100.*255./4500.)) && (tmp_depth < min_depth) )
 	      min_depth = tmp_depth;
 	  }
 
-	double l = (c - depthImage.cols/2) * min_depth *;
+	//double l = (c - depthImage.cols/2) * min_depth *;
 	double d =  min_depth*(4500.0/255.0)/100;
-	ls.ranges.push_back( sqrt(l*l + d*d) );
+	//Kinect v2の視角から(x,y)求める
+	double beta_x = ( HOR/2 )*(c - depthImage.cols/2 )/((double)depthImage.cols/2.);
+	double l = d / cos(beta_x*M_PI/180.);
+	ls.ranges.push_back( l );
 
-	cout<< "(l , d) = "<< l 
-	    << " , "<< d <<  " ) --->  "<< sqrt(l*l + d*d) <<endl;
+	cout<< "w: "<< c - depthImage.cols/2  << " , laser: "<< l 
+	    << " , deg "<< beta_x << endl;
       }
     //ros::Time b = ros::Time::now();
 
 
-    ls.angle_min = -3.14;
-    ls.angle_max = 3.14;
+    ls.angle_min = -1*35*M_PI/180.;
+    ls.angle_max = 35*M_PI/180.;
     ls.angle_increment = (ls.angle_max - ls.angle_min)/(depthImage.cols - 1);
     ls.scan_time = 0;
     ls.range_min = 0.5;

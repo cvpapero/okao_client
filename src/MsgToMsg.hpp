@@ -32,6 +32,8 @@ namespace MsgToMsg{
     
     for( int i = 0; i < JOINTS; ++i )
       {
+	dst->joints[i] = src.joints[i];
+	/*
 	dst->joints[i].joint_name 
 	  = src.joints[i].joint_name;
 	dst->joints[i].tracking_state 
@@ -54,6 +56,7 @@ namespace MsgToMsg{
 	  = src.joints[i].orientation.z;
 	dst->joints[i].orientation.w 
 	  = src.joints[i].orientation.w;
+	*/
       } 
   }
 
@@ -128,8 +131,10 @@ namespace MsgToMsg{
     try
       {
 	//notice ros::time!!
+	
 	tl.waitForTransform(dst->header.frame_id, src.header.frame_id, 
-			    ros::Time(), ros::Duration(5.0));
+			    src.header.stamp, ros::Duration(1.0));
+	
 	tl.transformPoint(dst->header.frame_id, ros::Time(), 
 			  src, src.header.frame_id, *dst);
       }
@@ -141,6 +146,7 @@ namespace MsgToMsg{
 
   }
 
+  /*
   void transformJoint(humans_msgs::Joints src,  humans_msgs::Joints *dst)
   {
     tf::TransformListener tflistener;
@@ -158,10 +164,10 @@ namespace MsgToMsg{
 
     try
       {
-	tflistener.waitForTransform("map", "camera_link", 
+	tflistener.waitForTransform("map", src.header.frame_id, 
 				    ros::Time(), ros::Duration(5.0));
 	tflistener.transformPose("map",ros::Time::now(), 
-				 srcJoint, "camera_link", dstJoint); 
+				 srcJoint, src.header.frame_id, dstJoint); 
 	
 	dst->position.x = dstJoint.pose.position.x;
 	dst->position.y = dstJoint.pose.position.y;
@@ -176,7 +182,8 @@ namespace MsgToMsg{
 	ROS_ERROR("Received an exception trying to transform a point (no!) to /map: %s", ex.what());
       }
   }
-
+  */
+  /*
   void transformJoints(humans_msgs::Body src, humans_msgs::Body *dst)
   {
 
@@ -188,5 +195,6 @@ namespace MsgToMsg{
 	dst->joints[i] = dst_joint;
       }
   }
+  */
 
 }

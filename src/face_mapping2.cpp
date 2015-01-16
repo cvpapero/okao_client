@@ -1,4 +1,10 @@
 /*
+2015.1.15-----------------
+やはり、service方式でデータを受け取る方がよい
+なぜなら、パブサブだと、データが来たときにしか更新されない
+そうじゃなくて、今、この瞬間の状態がどうなっているかを知りたい
+
+
 2014.8.29-----------------
 pub/sub方式で表示する
 point background
@@ -173,6 +179,10 @@ public:
 	    string histtext = toString<int>(rein->human[i].max_hist);
 	    name.text = idtext +","+ stack.response.name +","+ histtext;
 
+	    point.lifetime = ros::Duration(2.0);
+	    line.lifetime = ros::Duration(2.0);
+	    name.lifetime = ros::Duration(2.0); 
+
 	    points.markers.push_back( point );
 	    lines.markers.push_back( line );
 	    names.markers.push_back( name );
@@ -188,7 +198,10 @@ public:
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "face_mapping");
+
   FaceMapping FMObject;
+
+
   ros::spin();
   return 0;
 }
