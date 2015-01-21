@@ -39,6 +39,10 @@ srv
 #include <vector>
 #include <map>
 
+#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/image_encodings.h>
+
 //#include <math.h>
 #include "MsgToMsg.hpp"
 
@@ -54,13 +58,21 @@ class FaceMapping
 private:
   ros::NodeHandle n;
   ros::Publisher markerArray_pub_;
+  ros::Publisher testImage_pub_;
+  image_transport::ImageTransport it;
+  //image_transport::Publisher testImage_pub_;
   ros::Subscriber recogInfo_sub_;
 
 public:
   FaceMapping()
+    :it(n)
   {
     //図形メッセージをパブリッシュ
     markerArray_pub_ = n.advertise<visualization_msgs::MarkerArray>("/visualization_marker_array", 10);
+
+    //
+    testImage_pub_ = n.advertise<sensor_msgs::Image>("test_image", 10);//it.advertise("/testImage",10);
+
     recogInfo_sub_ = n.subscribe("/humans/RecogInfo", 1, &FaceMapping::callback, this);
   }
 
@@ -79,12 +91,12 @@ public:
       {
 	if( rein->human[i].d_id )
 	  { 
-	    ros::ServiceClient okaoStack = n.serviceClient<okao_client::OkaoStack>("okao_stack");
+	    ros::ServiceClient okaoStack = n.serviceClient<okao_client::OkaoStack>("stack_send");
 	    okao_client::OkaoStack stack;
 	    visualization_msgs::Marker point, line, name;
 
-	    stack.request.rule = "req";
-	    stack.request.okao_id = rein->human[i].max_okao_id;
+	    //stack.request.rule = "req";
+	    stack.request.person.okao_id = rein->human[i].max_okao_id;
 	    okaoStack.call(stack);
 	    
 	    point.header.frame_id =  line.header.frame_id = name.header.frame_id = "/map";
@@ -177,7 +189,7 @@ public:
 	    
 	    string idtext = toString<int>(rein->human[i].d_id);
 	    string histtext = toString<int>(rein->human[i].max_hist);
-	    name.text = idtext +","+ stack.response.name +","+ histtext;
+	    name.text = idtext +","+ stack.response.person.name +","+ histtext;
 
 	    point.lifetime = ros::Duration(2.0);
 	    line.lifetime = ros::Duration(2.0);
@@ -186,6 +198,17 @@ public:
 	    points.markers.push_back( point );
 	    lines.markers.push_back( line );
 	    names.markers.push_back( name );
+
+	    //cv_bridge::CvImage cv_img_color;
+	    //cv_img_color.header.stamp = ros::Time::now();
+	    //cv_img_color.header.frame_id = "test";
+	    //cv_img_color.encoding = "bgr8";
+	    //cv_img_color.image = imageColor;
+
+	    sensor_msgs::Image output;
+	    output =  stack.response.image;
+	    testImage_pub_.publish( output );
+
 	  }
       }
     markerArray_pub_.publish( points );

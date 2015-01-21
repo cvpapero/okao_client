@@ -133,7 +133,7 @@ namespace MsgToMsg{
 	//notice ros::time!!
 	
 	tl.waitForTransform(dst->header.frame_id, src.header.frame_id, 
-			    src.header.stamp, ros::Duration(1.0));
+			    src.header.stamp, ros::Duration(3.0));
 	
 	tl.transformPoint(dst->header.frame_id, ros::Time(), 
 			  src, src.header.frame_id, *dst);

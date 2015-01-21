@@ -10,7 +10,7 @@
 どうやって集めるか？
 集めた後、人物を認識していないときに初期化処理を行っておく
 
-
+ 
 まず、tracking_idについてのヒストグラムとバッファを消去する状況を考えてみる
 それは、前回と同じtracking_idが、今回は入ってこなかったとき、と想定する
 では、その前回と今回の比較のために必要なものは何か
@@ -298,7 +298,7 @@ hist.erase(lost_d_id);
 
     recog.num = okao_recog_num + okaoNot_recog_num;
     recog.header.stamp = ros::Time::now();
-    recog.header.frame_id = "recog";
+    recog.header.frame_id = "map";
     recog_pub_.publish( recog );
   }
 };

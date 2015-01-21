@@ -201,8 +201,8 @@ target_link_libraries(people_recog_info2 ${catkin_LIBRARIES})
 #add_executable(depth_to_laser2 src/depth_to_laser2.cpp)
 #target_link_libraries(depth_to_laser2 ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
-add_executable(face_mapping2 src/face_mapping2.cpp)
-target_link_libraries(face_mapping2 ${catkin_LIBRARIES})
+add_executable(face_mapping_publisher src/face_mapping_publisher.cpp)
+target_link_libraries(face_mapping_publisher ${catkin_LIBRARIES})
 
 add_executable(tracking_points src/tracking_points.cpp)
 target_link_libraries(tracking_points ${catkin_LIBRARIES})

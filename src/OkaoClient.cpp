@@ -113,6 +113,29 @@ public:
     //zmq_close( responder );
   } 
  
+  std::string idToEncoding(int type)
+  { 
+    // cannot unfortunately be in a switch
+    switch (type)
+      {
+      case CV_8UC1:
+	return "mono8";
+      case CV_16UC1:
+	return "mono16";
+      case CV_8UC3:
+	return "bgr8";
+      case CV_8UC4:
+	return "bgra8";
+      case CV_16UC3:
+	return "bgr16";
+      case CV_16UC4:
+	return "bgra16";
+      default:
+	return "";
+      }
+}
+  
+
   void callback(
 		const sensor_msgs::ImageConstPtr& imgmsg,
 		const humans_msgs::HumansConstPtr& kinect
@@ -130,11 +153,15 @@ public:
 	    //POS head2d, head3d, neck2d;
 	    Point top, bottom;
 	    geometry_msgs::Point head2d, neck2d;//, top, bottom;
-	    head2d.x = kinect->human[i].body.joints[HEAD].position_color_space.x;	   
-	    head2d.y = kinect->human[i].body.joints[HEAD].position_color_space.y;
+	    head2d.x 
+	      = kinect->human[i].body.joints[HEAD].position_color_space.x;	   
+	    head2d.y 
+	      = kinect->human[i].body.joints[HEAD].position_color_space.y;
 
-	    neck2d.x = kinect->human[i].body.joints[SPINE_S].position_color_space.x;	   
-	    neck2d.y = kinect->human[i].body.joints[SPINE_S].position_color_space.y;
+	    neck2d.x 
+	      = kinect->human[i].body.joints[SPINE_S].position_color_space.x;	   
+	    neck2d.y 
+	      = kinect->human[i].body.joints[SPINE_S].position_color_space.y;
 
 	    double diff_w =  fabs(head2d.y-neck2d.y);
 	    double diff_h =  fabs(head2d.y-neck2d.y);
@@ -163,12 +190,13 @@ public:
 
 	    if (( top.x > bottom.x || top.y > bottom.y)||( top.x == bottom.x || top.y == bottom.y))
 	      continue;
-	     
+	    /*   
 	    cout << "(" << top.x << "," << top.y << ")"
 		 << "-"
 		 << "(" << bottom.x << "," << bottom.y << ")"<<endl;
 	    cout << "diff:" << "(" << diff_w << "," << diff_h<< ")" << endl;
 	    cout << "image:" << "(" << cv_ptr->image.cols << "," << cv_ptr->image.rows << ")" << endl;
+	    */
 	    Mat cutRgbImage;
 	    try
 	      {
@@ -229,7 +257,7 @@ public:
 		// 受信
 		OkaoServer::ReplyMessage repMsg;
 		OkaoServer::recvReplyMessage(*responder, &repMsg);
-		std::cout << "repMsg.okao: " << repMsg.okao << std::endl;
+		//std::cout << "repMsg.okao: " << repMsg.okao << std::endl;
 	    	
 		const char* json = repMsg.okao.c_str();
 		picojson::value v;
@@ -263,13 +291,22 @@ public:
 				     green, 2, CV_AA);
 			
 			ros::ServiceClient client = nh_.serviceClient<
-			  okao_client::OkaoStack>("okao_stack");
+			  okao_client::OkaoStack>("stack_add");
 			okao_client::OkaoStack stack;
-			stack.request.rule = "add";
-			stack.request.okao_id = face_msg.persons[0].okao_id;
-			stack.request.name = face_msg.persons[0].name;
-			stack.request.laboratory = face_msg.persons[0].laboratory;
-			stack.request.grade = face_msg.persons[0].grade;
+			//stack.request.rule = "add";
+			stack.request.person = face_msg.persons[0];
+			
+			sensor_msgs::Image output;
+			cv::Mat outcutImage;
+			cv::resize(rgbImage, outcutImage, cv::Size(128,128));
+			output.height = outcutImage.rows; 
+			output.width = outcutImage.cols;
+			output.encoding = idToEncoding( outcutImage.type() );
+			output.step 
+			  = outcutImage.cols * outcutImage.elemSize();
+			output.data.assign(outcutImage.data, outcutImage.data + size_t(outcutImage.rows*output.step));
+			stack.request.image = output;
+			
 			if ( !client.call(stack) )
 			  cout << "service missing!" << endl;	
 			

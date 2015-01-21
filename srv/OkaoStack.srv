@@ -1,9 +1,13 @@
 string rule
+humans_msgs/Person person
+sensor_msgs/Image image
 int32 okao_id
 string name
 string laboratory
 string grade
 ---------
+humans_msgs/Person person
+sensor_msgs/Image image
 string name
 string laboratory
 string grade

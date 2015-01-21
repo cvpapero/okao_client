@@ -90,13 +90,21 @@ public:
 	m.color.a = 1;
 	m.color.r = 1;
 	m.color.g = 1;
-	//m.lifetime = ros::Duration(1);
+	m.lifetime = ros::Duration(5.0);
+
 	ma.markers.push_back(m);
 
 	//MsgToMsg::bodyAndFaceToMsg(track->human[i].body,track->human[i].face, &tp.human[i]);
       }
-    ma_pub_.publish(ma);
-    path_pub_.publish(tp);
+    /*
+    if( ros::Duration(5) > map_time - track->header.stamp ) 
+      {
+    */
+	ma_pub_.publish(ma);
+	path_pub_.publish(tp);
+	/*
+      }
+    */
   }
 };
 
