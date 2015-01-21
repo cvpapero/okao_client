@@ -97,6 +97,11 @@ public:
     recog_pub_ = 
       nh.advertise<humans_msgs::Humans>("/humans/RecogInfo", 1);
   }
+  ~RecogInfo()
+  {
+    tracking_id_buf.clear();
+    hist.clear();
+  }
 
   void histogram(int d_id, int *o_id, int *o_conf, int *maxOkaoId, int *maxHist)
   {

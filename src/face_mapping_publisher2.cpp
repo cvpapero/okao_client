@@ -51,6 +51,8 @@ srv
 
 using namespace std;
 
+map<int, humans_msgs::PersonPoseImg> dbhuman;
+
 class FaceMappingPub
 {
 private:
@@ -58,6 +60,7 @@ private:
   ros::Publisher facemap_pub_ ;
   ros::ServiceClient okaoStack_;
   ros::Subscriber recogInfo_sub_;
+
 
 public:
   FaceMappingPub()
@@ -78,51 +81,56 @@ public:
 
   void callback(const humans_msgs::HumansConstPtr& rein)
   {
-
-    humans_msgs::PersonPoseImgArray ppia;
     //cout << rein->num << endl;
     //ROS_INFO("people found");
-    for(int i = 0; i < rein->num; ++i)
+    humans_msgs::PersonPoseImgArray ppia;
+    if(rein->num)
       {
-	humans_msgs::PersonPoseImg ppi;
-	okao_client::OkaoStack stack;
-	
-	stack.request.person.okao_id = rein->human[i].max_okao_id;
-	okaoStack_.call( stack );
-	
-	//haia.human.push_back( dbhumans.response.dst.human[i] );
-	
-	//sensor_msgs::Image output;
-	ppi.person.hist = rein->human[i].max_hist;
-	ppi.person.okao_id = rein->human[i].max_okao_id;
-	ppi.person.name = stack.response.name;
-	ppi.pose.position = rein->human[i].p;
-	ppi.pose.orientation.w = 1;//dbhuman.response.dst.human[i].body.p;
-	
-	stringstream ss;
-	ss <<"/home/uema/catkin_ws/src/okao_client/src/images/" 
-	   << rein->human[i].max_okao_id <<".jpg";
-	/*
-	cv::Mat faceImage = cv::imread(ss.str(), 1);
-	sensor_msgs::Image output;
-	output.height = faceImage.rows; 
-	output.width = faceImage.cols;
-	output.encoding = "bgr8";
-	output.step = faceImage.cols * faceImage.elemSize();
-	output.data.assign(faceImage.data, 
-			   faceImage.data + size_t(faceImage.rows*output.step));
-	ppi.image = output;
-	*/
-	ppi.image = stack.response.image;
-	
-	ppia.ppis.push_back( ppi );
-	
+	for(int i = 0; i < rein->num; ++i)
+	  {
+	    humans_msgs::PersonPoseImg ppi;
+	    okao_client::OkaoStack stack;
+	    
+	    stack.request.person.okao_id = rein->human[i].max_okao_id;
+	    okaoStack_.call( stack );
+	    
+	    //haia.human.push_back( dbhumans.response.dst.human[i] );
+	    
+	    //sensor_msgs::Image output;
+	    ppi.person.hist = rein->human[i].max_hist;
+	    ppi.person.hist = 1;
+	    ppi.person.okao_id = rein->human[i].max_okao_id;
+	    ppi.person.name = stack.response.person.name;
+	    ppi.pose.position = rein->human[i].p;
+	    ppi.pose.orientation.w = 1;
+	    
+
+	    ppi.image = stack.response.image;
+	    ppi.header.stamp = ros::Time::now();
+	    //ppi.image = stack.response.image;
+	    
+	    //ppia.ppis.push_back( ppi );
+	    dbhuman[ rein->human[i].max_okao_id ] = ppi;
+	  }
       }
-    //cout<< ppia <<endl;
-    ppia.header.stamp = ros::Time::now();
-    ppia.header.frame_id = "map";
-    //.num = dbhumans.response.dst.num;
+
+
+
+    map<int, humans_msgs::PersonPoseImg>::iterator it = dbhuman.begin();
+    while(it != dbhuman.end())
+      {
+	//cout<< ppia <<endl;
+	ppia.header.stamp = ros::Time::now();
+	ppia.header.frame_id = "map";
+	cout << it->second.person << endl;
+	cout << it->second.header.stamp << endl;
+	ppia.ppis.push_back( it->second );
+	++it;
+	//facemap_pub_.publish( ppia );
+      }
+
     facemap_pub_.publish( ppia );
+
   }
   
 };
