@@ -1,13 +1,8 @@
 /*
-2014.12.18----------------
-人物の位置を一時的に保存しておくモジュール
-OKAO_IDをもらったら最新の人物位置を返す
+2015.1.9----------------
 
-
-2014.6.3------------------
-認識した人数分の人物位置を一時的に記録しておくモジュール
-
-map<int,point3D>で、okao_idをキーにする
+今は、ruleに入ってるキーワードを判定した条件分岐で、検索の処理をしている
+つまり、キーワードの数だけ条件分岐がいる
 
  
 */
@@ -19,110 +14,206 @@ map<int,point3D>で、okao_idをキーにする
 #include <string>
 #include <sstream>
 #include <iostream>
-#include <time.h>
+//#include <time.h>
 
 //オリジナルメッセージ
 #include "humans_msgs/Humans.h"
-#include "okao_client/OkaoPosSrv.h"
+#include "humans_msgs/HumanSrv.h"
+#include "humans_msgs/HumansSrv.h"
+//#include "okao_client/OkaoStack.h"
 #include "okao_client/OkaoStack.h"
+#include "MsgToMsg.hpp"
 
 using namespace std;
 
-class pointStamp{
-public:
-  ros::Time t; 
-  float x;
-  float y;
-  pointStamp(){
-  }
-};
+//map<int, humans_msgs::Human> n_DBHuman;
+//map<int, humans_msgs::Human> p_DBHuman;
+map<int, humans_msgs::Human> o_DBHuman;
 
-map<int, pointStamp> dicts;
-
-class Server
+class PeoplePositionServer
 {
 private:
   ros::NodeHandle n;
-  ros::Subscriber sub_;
-  ros::ServiceServer srv_;
-  time_t timer;
-  struct tm *local;
+  ros::Subscriber rein_sub_;
+  ros::ServiceServer track_srv_;
+  ros::ServiceServer okao_srv_;
+  ros::ServiceClient okaoStack_;
+  ros::ServiceServer array_srv_;
+
+  //人物の初期化をする
+  //humans_msgs::Human init;
+  //o_DBHuman[1] = 
+
 
 public:
-  Server()
+  PeoplePositionServer()
   {
-    sub_ = n.subscribe("/humans/RecogInfo", 1, &Server::callback, this);
-    srv_ = n.advertiseService("okao_pos_srv", &Server::sendData, this);
-  }
+    rein_sub_ 
+      = n.subscribe("/humans/RecogInfo", 1, 
+		    &PeoplePositionServer::callback, this);
+    track_srv_ 
+      = n.advertiseService("track_srv", 
+			   &PeoplePositionServer::resTrackingId, this);
+    okao_srv_ 
+      = n.advertiseService("okao_srv", 
+			   &PeoplePositionServer::resOkaoId, this);
+    okaoStack_
+      = n.serviceClient<okao_client::OkaoStack>("stack_send");
 
-  string people_name(int okao_id)
-  {
-    ros::ServiceClient okaoStack = 
-      n.serviceClient<okao_client::OkaoStack>("okao_stack");
-    okao_client::OkaoStack stack;
-
-    stack.request.rule = "req";
-    stack.request.okao_id = okao_id;
-    okaoStack.call(stack);
-
-    return stack.response.name;
+    array_srv_ 
+      = n.advertiseService("array_srv", 
+			   &PeoplePositionServer::resHumans, this);
   }
   
-  void callback(const humans_msgs::HumansConstPtr& rein)
+  ~PeoplePositionServer()
   {
-    timer = time( NULL );
-    local = localtime( &timer );
-
-    int year = local->tm_year + 1900;
-    int month = local->tm_mon + 1;
-    int day = local->tm_mday;
-    int hour = local->tm_hour;
-    int min = local->tm_min;
-    int sec = local->tm_sec;
-    int isdst = local->tm_isdst; 
-
-    for(int i = 0; i < rein->num; ++i)
-      {
-	pointStamp ps;
-	//position.id = rein->human[i].max_okao_id;
-	ps.x = rein->human[i].p.x;
-	ps.y = rein->human[i].p.y;
-	ps.t = rein->header.stamp;
-	dicts[ rein->human[i].max_okao_id ] = ps;
-
-	cout <<"update [ "<< year << "/" << month << "/" << day
-	     << " " << hour << ":" << min << ":" << sec  
-	     << " ]: " << people_name( rein->human[i].max_okao_id )
-	     << " , (x , y) = ("<< ps.x 
-	     << " , " << ps.y << ")" << endl;
-      }  
+    //n_DBHuman.clear();
+    //p_DBHuman.clear();
+    o_DBHuman.clear();
   }
 
-  bool sendData(okao_client::OkaoPosSrv::Request &req,
-		okao_client::OkaoPosSrv::Response &res)
+  void callback(const humans_msgs::HumansConstPtr& rein)
   {
-    pointStamp position;
-    if(req.rule == "req")
+
+    if( rein->num == 0 )
       {
-	cout << "requast people: "
-	     << people_name( req.okao_id ) << endl;
-	res.res_x = dicts[ req.okao_id ].x;
-	res.res_y = dicts[ req.okao_id ].y;
-	res.res_t = dicts[ req.okao_id ].t;
-	return true;
+	//ここで、見えなくなった人物のd_idをパブリッシュしてもいいかも
+	//もし、N_DBHumanの中にデータが入っていたら、d_idをpeople_recog_infoにreq/resして、.clear()する
+	//n_DBHuman.size();
       }
     else
       {
-	std::cout<< "false"<<std::endl;
-	return false;
-      }
+
+	for(int i = 0; i < rein->num; ++i)
+	  {
+	    humans_msgs::Human ah;
+	    ah.header.stamp = ros::Time::now();
+	    ah = rein->human[ i ];
+	    //n_DBHuman[ i ] = ah;
+	    //p_DBHuman[ rein->human[ i ].d_id ] = ah;
+	    o_DBHuman[ rein->human[ i ].max_okao_id ] = ah;
+	    ROS_INFO("people data update! okao_id: %d", rein->human[ i ].max_okao_id);
+	  } 
+      } 
   }
+
+  void transformPosition(humans_msgs::Human hsrc, humans_msgs::Human *hdst)
+  {
+    //cout << "now looking: " << it_o->second.max_okao_id << endl;
+    ros::Time t = ros::Time::now();
+    geometry_msgs::PointStamped src;
+    src.point = hsrc.p; 
+    src.header.stamp = t;
+    src.header.frame_id = hsrc.header.frame_id;
+    geometry_msgs::PointStamped dst;
+    dst.header.stamp = t;
+    dst.header.frame_id = hdst->header.frame_id;
+    MsgToMsg::transformHead(src, &dst);
+    hdst->p = dst.point;
+    hdst->header.stamp = t;
+    hdst->header.frame_id = dst.header.frame_id;
+    hdst->d_id = hsrc.d_id;
+    hdst->max_okao_id = hsrc.max_okao_id;
+    hdst->max_hist = hsrc.max_hist;
+  }
+
+
+  void getPerson(humans_msgs::Human hsrc, humans_msgs::Human *hdst)
+  {
+    okao_client::OkaoStack stack;
+    stack.request.person.okao_id = hsrc.max_okao_id;
+    okaoStack_.call( stack );
+
+    humans_msgs::Person person;
+    person = stack.response.person;
+    hdst->face.persons.push_back( person );
+  }
+
+  bool resTrackingId(humans_msgs::HumanSrv::Request &req,
+		     humans_msgs::HumanSrv::Response &res)
+  {
+    cout<<"tracking_id"<<endl;
+
+    //o_DBHuman内から、tracking_idをキーにして検索
+    map<int, humans_msgs::Human>::iterator it_o = o_DBHuman.begin();
+    while( it_o != o_DBHuman.end() )
+      {
+	if( it_o->second.body.tracking_id == req.src.body.tracking_id )
+	  {
+	    humans_msgs::Human h_res;
+	    h_res.header.frame_id = req.src.header.frame_id;
+	    cout <<"frame_id: "<< it_o->second.header.frame_id 
+		 <<" to frame_id: " << h_res.header.frame_id <<endl;
+	    transformPosition(it_o->second, &h_res);
+	    getPerson(it_o->second, &h_res);
+
+	    //h_res;
+	    res.dst = h_res;//it_o->second;
+	    return true;
+	  }
+	++it_o;
+      }
+    return false;
+  }
+
+  bool resOkaoId(humans_msgs::HumanSrv::Request &req,
+		 humans_msgs::HumanSrv::Response &res)
+    
+  {
+    //n_DBHumanについての検索
+    //もしそれでもみつからなかったらp_DBHumanから検索する
+    //どのデータベースから見つかったかをラベルづけして返す(.srvに記述しておく)
+    cout<<"okao_id"<<endl;
+
+    map<int, humans_msgs::Human>::iterator it_o = o_DBHuman.begin();
+    while( it_o != o_DBHuman.end() )
+      {
+	if( it_o->second.max_okao_id == req.src.max_okao_id )
+	  {
+	    humans_msgs::Human h_res;
+	    h_res.header.frame_id = req.src.header.frame_id;
+	    cout <<"frame_id: "<< it_o->second.header.frame_id 
+		 <<" to frame_id: " << h_res.header.frame_id <<endl;
+	    transformPosition(it_o->second, &h_res);
+	    getPerson(it_o->second, &h_res);
+
+	    res.dst = h_res;//it_o->second;
+	    return true;
+	  }
+	++it_o;
+      }
+    return false;
+  }
+
+  
+  bool resHumans(humans_msgs::HumansSrv::Request &req,
+		 humans_msgs::HumansSrv::Response &res)
+  {
+    ROS_INFO("all people request!");
+    humans_msgs::Humans hums;
+    map<int, humans_msgs::Human>::iterator it = o_DBHuman.begin();
+    int num = 0;
+    while( it != o_DBHuman.end() )
+      { 
+	//ここで、mapが持っている値を次の値につめて返す
+	humans_msgs::Human hum;
+	hum = it->second;  
+	hums.human.push_back( hum );
+	++num;
+      }
+    //hums.header
+    hums.num = num;
+    res.dst = hums;
+    return true;
+  }
+  
+ 
 };
   
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "people_position_server");
-  Server SRV;
+  PeoplePositionServer PPS;
   ros::spin();
   return 0;
 }

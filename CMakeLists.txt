@@ -192,8 +192,11 @@ target_link_libraries(people_recog_info ${catkin_LIBRARIES})
 add_executable(people_recog_info2 src/people_recog_info2.cpp)
 target_link_libraries(people_recog_info2 ${catkin_LIBRARIES})
 
-#add_executable(people_position_client src/people_position_client.cpp)
-#target_link_libraries(people_position_client ${catkin_LIBRARIES})
+add_executable(people_recog_info2_1 src/people_recog_info2_1.cpp)
+target_link_libraries(people_recog_info2_1 ${catkin_LIBRARIES})
+
+add_executable(people_position_server src/people_position_server.cpp)
+target_link_libraries(people_position_server ${catkin_LIBRARIES})
 
 #add_executable(recog_info_vision src/recog_info_vision.cpp)
 #target_link_libraries(recog_info_vision ${catkin_LIBRARIES} ${OpenCV_LIBS})

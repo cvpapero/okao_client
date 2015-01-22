@@ -101,7 +101,7 @@ public:
 
 	    ppi.image = stack.response.image;
 	    ppi.header.stamp = ros::Time::now();
-
+	    ppi.header.frame_id = rein->human[i].header.frame_id;
 	    dbhuman[rein->human[i].max_okao_id] = ppi;
 	  }
       }
@@ -109,27 +109,30 @@ public:
 
     map<int, humans_msgs::PersonPoseImg>::iterator it = dbhuman.begin();
     ros::Time now = ros::Time::now();
-    if(dbhuman.size())
+    //if(dbhuman.size())
+    //  {
+    int test = 0;
+    while(it != dbhuman.end())
       {
-	while(it != dbhuman.end())
+	//timeout
+	double timeout = 10.0;
+	if ((now - it->second.header.stamp).toSec() > timeout)
 	  {
-	    //timeout
-	    double timeout = 20.0;
-	    if ((now - it->second.header.stamp).toSec() > timeout)
-	      {
-		//eraseする
-		cout << it->first << " is erase" <<endl;
-		dbhuman.erase( it->first );
-	      }
-	    else
-	      {
-		ppia.ppis.push_back( it->second );
-	      }
-	    ++it;
+	    //eraseする
+	    //cout << it->first << " is erase" <<endl;
+	    //dbhuman.erase( it->first );
 	  }
+	else
+	  {
+	    //cout << it->second.person << endl;
+	    ppia.ppis.push_back( it->second );
+	  }
+	++it; 
+	++test;
       }
+    // }
     
-    //cout<< ppia <<endl;
+    //cout<<test <<endl;
     ppia.header.stamp = ros::Time::now();
     ppia.header.frame_id = "map";
     //.num = dbhumans.response.dst.num;
