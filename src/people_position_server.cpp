@@ -37,6 +37,7 @@ private:
   ros::Subscriber rein_sub_;
   ros::ServiceServer track_srv_;
   ros::ServiceServer okao_srv_;
+  ros::ServiceServer name_srv_;
   ros::ServiceClient okaoStack_;
   ros::ServiceServer array_srv_;
 
@@ -57,6 +58,11 @@ public:
     okao_srv_ 
       = n.advertiseService("okao_srv", 
 			   &PeoplePositionServer::resOkaoId, this);
+
+    name_srv_ 
+      = n.advertiseService("name_srv", 
+			   &PeoplePositionServer::resName, this);
+
     okaoStack_
       = n.serviceClient<okao_client::OkaoStack>("stack_send");
 
@@ -132,7 +138,7 @@ public:
   bool resTrackingId(humans_msgs::HumanSrv::Request &req,
 		     humans_msgs::HumanSrv::Response &res)
   {
-    cout<<"tracking_id"<<endl;
+    cout<<"tracking_id"<< req.src.body.tracking_id << endl;
 
     //o_DBHuman内から、tracking_idをキーにして検索
     map<int, humans_msgs::Human>::iterator it_o = o_DBHuman.begin();
@@ -163,7 +169,7 @@ public:
     //n_DBHumanについての検索
     //もしそれでもみつからなかったらp_DBHumanから検索する
     //どのデータベースから見つかったかをラベルづけして返す(.srvに記述しておく)
-    cout<<"okao_id"<<endl;
+    cout<<"okao_id: "<< req.src.max_okao_id << endl;
 
     map<int, humans_msgs::Human>::iterator it_o = o_DBHuman.begin();
     while( it_o != o_DBHuman.end() )
@@ -185,6 +191,33 @@ public:
     return false;
   }
 
+  bool resName(humans_msgs::HumanSrv::Request &req,
+	       humans_msgs::HumanSrv::Response &res)
+    
+  {
+    //n_DBHumanについての検索
+    //もしそれでもみつからなかったらp_DBHumanから検索する
+    //どのデータベースから見つかったかをラベルづけして返す(.srvに記述しておく)
+    cout<<"name: "<< req.src.face.persons[0].name << endl;
+    map<int, humans_msgs::Human>::iterator it_o = o_DBHuman.begin();
+    while( it_o != o_DBHuman.end() )
+      {
+	if( it_o->second.face.persons[0].name == req.src.face.persons[0].name )
+	  {
+	    humans_msgs::Human h_res;
+	    h_res.header.frame_id = req.src.header.frame_id;
+	    cout <<"frame_id: "<< it_o->second.header.frame_id 
+		 <<" to frame_id: " << h_res.header.frame_id <<endl;
+	    transformPosition(it_o->second, &h_res);
+	    getPerson(it_o->second, &h_res);
+
+	    res.dst = h_res;//it_o->second;
+	    return true;
+	  }
+	++it_o;
+      }
+    return false;
+  }
   
   bool resHumans(humans_msgs::HumansSrv::Request &req,
 		 humans_msgs::HumansSrv::Response &res)

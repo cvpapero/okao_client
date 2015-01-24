@@ -66,24 +66,30 @@ public:
 		okao_client::OkaoStack::Response &res)
   {
 
-    if(stack.count(req.okao_id) == 0)
-      {
+    //if(stack.count(req.okao_id) == 0)
+    //  {
 	//humans_msgs::Person prop;
 	//prop = req.person;
 	//prop.laboratory = req.laboratory;
 	//prop.grade = req.grade;
+
+    if(stack[req.person.okao_id].conf < req.person.conf)
+      {
 	stack[ req.person.okao_id ] = req.person;//prop;
+    
+	//if(stac)
 	imgstack[ req.person.okao_id ] = req.image;
 	cout <<"add---> okao_id: "<< req.person.okao_id 
 	     <<", name: "<< req.person.name << endl;
-
+      }
+	/*
       }
     else
       {
 	//cout << "already exists!" << endl;
       }
-
-
+	*/
+    /*
     cv_bridge::CvImagePtr cv_ptr;
     try
       {
@@ -95,11 +101,11 @@ public:
    
       }
 
-    //cv::Mat out = cv_ptr->image;
+    cv::Mat out = cv_ptr->image;
     stringstream ss;
     ss <<"/home/uema/catkin_ws/src/okao_client/src/images/" << req.person.okao_id <<".jpg";
     cv::imwrite(ss.str(),cv_ptr->image);
-
+    */
     return true;
   }
 

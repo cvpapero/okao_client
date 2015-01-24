@@ -85,6 +85,11 @@ public:
     pastDbhuman.clear();
   }
 
+  void convertMsgToMat()
+  {
+
+  }
+
   void callback(const humans_msgs::HumansConstPtr& rein)
   {
 
@@ -124,28 +129,30 @@ public:
 	double timeout = 10.0;
 	if ((now - it->second.header.stamp).toSec() > timeout)
 	  {
+	    cv::Mat img;
+	    sensor_msgs::Image msgImg;
+	    msgImage = it->second.image;
+	    covertMsgToMat(msgImage, *img);
 	    /*
-	    humans_msgs::Person person;
-	    person = it->second.person;
-	    sensor_msgs::Image gImg;
-	    cv_bridge::CvImage cvImg;
-	    cvImg = it->second.image;
-	    cv::cvtColor(cvImg.image, cvImg.image, CV_RGB2GRAY);
-	    gImg.height = cvImg.rows;
-	    gImg.width = cvImg.cols;
-	    gImg.encoding = "mono16";
-gImg.step = cvImg.data
+	      humans_msgs::Person person;
+	      person = it->second.person;
+	      sensor_msgs::Image gImg;
+	      cv_bridge::CvImage cvImg;
+	      cvImg = it->second.image;
+	      cv::cvtColor(cvImg.image, cvImg.image, CV_RGB2GRAY);
+	      gImg.height = cvImg.rows;
+	      gImg.width = cvImg.cols;
+	      gImg.encoding = "mono16";
+	      gImg.step = cvImg.data
 	    */
+	    //グレイスケール処理
 	    ppia_past.ppis.push_back( it->second );
 	    //eraseする
 	    //cout << it->first << " is erase" <<endl;
 	    //dbhuman.erase( it->first );
 	  }
-	else
-	  {
-	    //cout << it->second.person << endl;
-	    ppia.ppis.push_back( it->second );
-	  }
+	
+	ppia.ppis.push_back( it->second );	
 	++it; 
 	++test;
       }

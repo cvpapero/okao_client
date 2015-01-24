@@ -3,6 +3,7 @@
 	<include file="$(find kinectv2client)/launch/all_kinect.launch" />
 	<node pkg="okao_client" type="okao_stack" respawn="false" name="okao_stack" />
 	<node pkg="okao_client" type="people_recog_info2_1" respawn="false" name="people_recog_info" output="screen" />
+<!--
 	<node pkg="okao_client" type="face_mapping_publisher" respawn="false" name="face_mapping_publisher" output="screen" />
-
+-->
 </launch>
