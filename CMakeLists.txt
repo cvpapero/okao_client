@@ -182,6 +182,8 @@ find_library(ZMQ_LIBRARIE
 
 add_executable(OkaoClient src/OkaoClient.cpp)
 target_link_libraries(OkaoClient ${catkin_LIBRARIES} ${OpenCV_LIBS} ${ZMQ_LIBRARIE} msgpack)
+add_executable(OkaoClientTest src/OkaoClientTest.cpp)
+target_link_libraries(OkaoClientTest ${catkin_LIBRARIES} ${OpenCV_LIBS} ${ZMQ_LIBRARIE} msgpack)
 
 add_executable(okao_stack src/okao_stack.cpp)
 target_link_libraries(okao_stack ${catkin_LIBRARIES})
@@ -213,8 +215,8 @@ target_link_libraries(face_mapping_publisher2 ${catkin_LIBRARIES})
 add_executable(tracking_points src/tracking_points.cpp)
 target_link_libraries(tracking_points ${catkin_LIBRARIES})
 
-#add_executable(position_sub src/position_sub.cpp)
-#target_link_libraries(position_sub ${catkin_LIBRARIES})
+add_executable(okao_recog_per src/okao_recog_per.cpp)
+target_link_libraries(okao_recog_per ${catkin_LIBRARIES})
 
 #add_executable(humans_pass2 src/humans_pass2.cpp)
 #target_link_libraries(humans_pass2 ${catkin_LIBRARIES})
