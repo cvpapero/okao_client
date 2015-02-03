@@ -89,6 +89,7 @@ public:
     //			   &PeoplePositionServer::resHumans, this);
 
     file_input();
+    //allHumanPublisher();
   }
   
   ~PeoplePositionServer()
@@ -122,7 +123,7 @@ public:
 	fhum.header.frame_id = "map";
 	fhum.header.stamp = ros::Time::now();
 	o_DBHuman[ fhum.max_okao_id ] = fhum;
-	cout <<"input:"<<endl << fhum << endl;
+	cout <<"input:"<<endl << fhum.max_okao_id << endl << fhum.p << endl;
       }
     //cout << 
   }
@@ -148,7 +149,7 @@ public:
 	//h_res;
 	//res.dst = h_res;//it_o->second;
 	//return true;
-	cout << "write data:" << ss.str() <<endl;
+
 	++it_o; 
       }
 
@@ -159,7 +160,7 @@ public:
         return;
       }
     ofs << ss.str() <<endl;
-
+    cout << "write data:" << ss.str() <<endl;
   }
 
   void callback(const humans_msgs::HumansConstPtr& rein)
@@ -237,19 +238,26 @@ public:
     okao_client::OkaoStack stack;
     
     stack.request.person.okao_id = hum.max_okao_id;
-    okaoStack_.call( stack );
+
+    if( okaoStack_.call( stack ) )
+      {
     
-    ppi->person.hist = hum.max_hist;
-    ppi->person.okao_id = hum.max_okao_id;
-    ppi->person.name = stack.response.person.name;
-    ppi->pose.position = hum.p;
-    ppi->pose.orientation.w = 1;
-    
-    ppi->image = stack.response.image;
-    ppi->header.stamp = ros::Time::now();
-    ppi->header.frame_id = hum.header.frame_id;
-    //cout << hum.header.frame_id <<endl;
-    //dbhuman[rein->human[i].max_okao_id] = ppi;
+	ppi->person.hist = hum.max_hist;
+	ppi->person.okao_id = hum.max_okao_id;
+	ppi->person.name = stack.response.person.name;
+	ppi->pose.position = hum.p;
+	ppi->pose.orientation.w = 1;
+	
+	ppi->image = stack.response.image;
+	ppi->header.stamp = ros::Time::now();
+	ppi->header.frame_id = hum.header.frame_id;
+	//cout << hum.header.frame_id <<endl;
+	//dbhuman[rein->human[i].max_okao_id] = ppi;
+      }
+    else
+      {
+	cout << "okao_id: " << hum.max_okao_id << " has not stack!" <<endl;
+      }
   }
 
   //現在はbody.pのみ
@@ -416,6 +424,11 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "people_position_server");
   PeoplePositionServer PPS;
-  ros::spin();
+  while(ros::ok())
+    {
+      PPS. allHumanPublisher();
+      ros::spinOnce();
+    }
+  //ros::spin();
   return 0;
 }

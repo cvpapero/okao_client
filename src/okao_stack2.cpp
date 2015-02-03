@@ -14,6 +14,7 @@ service形式
 #include "okao_client/OkaoStack.h"
 #include <humans_msgs/Humans.h>
 #include <sensor_msgs/Image.h>
+#include <fstream>
 
 //test
 #include <image_transport/image_transport.h>
@@ -55,35 +56,73 @@ public:
     add = n.advertiseService("stack_add", &OkaoStackServer::addData, this);
     send = n.advertiseService("stack_send", &OkaoStackServer::sendData, this);
 
-    //ファイル読み込み
-    for(int i = 0; i<ALL; ++i)
-      {
-	stringstream image_name;
-	image_name <<"/home/yhirai/catkin_ws/src/okao_client/src/images/" << i << ".jpg";
-	cv::Mat src = cv::imread(image_name.str());
 
-	sensor_msgs::Image output;
-	//cv::Mat outcutImage;
-	//cv::resize(rgbImage, outcutImage, cv::Size(128,128));
-	output.height = src.rows; 
-	output.width = src.cols;
-	output.encoding = "bgr8";//idToEncoding( outcutImage.type() );
-	output.step 
-	  = src.cols * src.elemSize();
-	output.data.assign(src.data, src.data + size_t(src.rows*src.step));
-	//stack.request.image = output;
-	imgstack[ i ] = output;
-      }
-
+    inputImage();
     //test
     //cv::namedWindow(OPENCV_WINDOW);
   }
 
   ~OkaoStackServer()
   {
+    outputImage();
 
+    stack.clear();
+    imgstack.clear();
+  }
+
+  void inputImage()
+  {
+
+    cout << "file open" << endl;
+    //まず、ファイルは以下のような形式にする
+    //okao_id,name,hist,x,y,z 
+    //okao_idをみて、人物の位置をo_DBHumanに詰め込んでいく   
+    std::ifstream ifs("/home/yhirai/catkin_ws/src/okao_client/src/people/peopledata.txt");
+    if(ifs.fail())
+      {  // if(!fin)でもよい。
+	cout << "入力ファイルをオープンできません" << endl;
+	return;
+      }
+    //ファイル読み込み
+    //for(int i = 0; i<ALL; ++i)
+    //  {
+    humans_msgs::Human fhum;
+    humans_msgs::Person fperson;
+    while( (ifs >> fhum.max_okao_id >> fperson.name >> fhum.max_hist >> fhum.p.x >> fhum.p.y >> fhum.p.z )!=0 )
+      {
+	fperson.okao_id = fhum.max_okao_id;
+	stack[ fhum.max_okao_id ] = fperson;
+	try
+	  {
+	    stringstream image_name;
+	    image_name <<"/home/yhirai/catkin_ws/src/okao_client/src/images/" << fhum.max_okao_id << ".jpg";
+	    cv::Mat src = cv::imread(image_name.str());
+	    cout << "input: " << image_name.str() << endl;
+	    sensor_msgs::Image output;
+	    //cv::Mat outcutImage;
+	//cv::resize(rgbImage, outcutImage, cv::Size(128,128));
+	    output.height = src.rows; 
+	    output.width = src.cols;
+	    output.encoding = "bgr8";//idToEncoding( outcutImage.type() );
+	    output.step 
+	      = src.cols * src.elemSize();
+	    output.data.assign(src.data, src.data + size_t(src.rows*src.step));
+	    //stack.request.image = output;
+	    imgstack[ fhum.max_okao_id ] = output;
+	  }
+	catch(cv::Exception& e)
+	  {
+	    std::cout << e.what() << std::endl;
+	    return; 
+	  }
+      }
+  }
+
+
+  void outputImage()
+  {
     map<int, sensor_msgs::Image>::iterator imgit = imgstack.begin();
-    int okao_id_count = 0;
+    //int okao_id_count = 0;
     while( imgit != imgstack.end() )
       { 
 	//cv::destroyWindow(OPENCV_WINDOW);
@@ -100,15 +139,14 @@ public:
 	
 	cv::Mat out = cv_ptr->image;
 	stringstream ss;
-	ss <<"/home/yhirai/catkin_ws/src/okao_client/src/images/" << okao_id_count <<".jpg";
+	ss <<"/home/yhirai/catkin_ws/src/okao_client/src/images/" << imgit->first <<".jpg";
 	cv::imwrite(ss.str(),cv_ptr->image);
 	 
 	++imgit;
-	++okao_id_count;
+	//++okao_id_count;
       }
-    stack.clear();
-    imgstack.clear();
   }
+
 
   bool addData(okao_client::OkaoStack::Request &req,
 		okao_client::OkaoStack::Response &res)
@@ -179,7 +217,7 @@ public:
       }
     else
       {
-	cout << "request false" << endl;
+	cout << "request false :" <<  req.person.okao_id << endl;
 	return false;
       }
   }
