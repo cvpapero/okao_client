@@ -62,6 +62,7 @@ find_package(OpenCV REQUIRED)
 add_service_files(
   FILES
   OkaoStack.srv
+  OkaoName.srv
   OkaoPosSrv.srv
   LostTracking.srv
   testmsg.srv
@@ -191,8 +192,8 @@ target_link_libraries(okao_stack ${catkin_LIBRARIES})
 add_executable(people_recog_info src/people_recog_info.cpp)
 target_link_libraries(people_recog_info ${catkin_LIBRARIES})
 
-add_executable(people_recog_info2 src/people_recog_info2.cpp)
-target_link_libraries(people_recog_info2 ${catkin_LIBRARIES})
+add_executable(people_recog_info2_1test src/people_recog_info2_1test.cpp)
+target_link_libraries(people_recog_info2_1test ${catkin_LIBRARIES})
 
 add_executable(people_recog_info2_1 src/people_recog_info2_1.cpp)
 target_link_libraries(people_recog_info2_1 ${catkin_LIBRARIES})
@@ -200,17 +201,20 @@ target_link_libraries(people_recog_info2_1 ${catkin_LIBRARIES})
 add_executable(people_position_server src/people_position_server.cpp)
 target_link_libraries(people_position_server ${catkin_LIBRARIES})
 
-#add_executable(recog_info_vision src/recog_info_vision.cpp)
-#target_link_libraries(recog_info_vision ${catkin_LIBRARIES} ${OpenCV_LIBS})
+add_executable(recog_info_vision src/recog_info_vision.cpp)
+target_link_libraries(recog_info_vision ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
 #add_executable(depth_to_laser2 src/depth_to_laser2.cpp)
 #target_link_libraries(depth_to_laser2 ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
-add_executable(face_mapping_publisher src/face_mapping_publisher.cpp)
-target_link_libraries(face_mapping_publisher ${catkin_LIBRARIES})
+#add_executable(face_mapping_publisher src/face_mapping_publisher.cpp)
+#target_link_libraries(face_mapping_publisher ${catkin_LIBRARIES})
 
-add_executable(face_mapping_publisher2 src/face_mapping_publisher2.cpp)
-target_link_libraries(face_mapping_publisher2 ${catkin_LIBRARIES})
+add_executable(okao_stack2 src/okao_stack2.cpp)
+target_link_libraries(okao_stack2 ${catkin_LIBRARIES}  ${OpenCV_LIBS})
+
+add_executable(people_position_server2 src/people_position_server2.cpp)
+target_link_libraries(people_position_server2 ${catkin_LIBRARIES})
 
 add_executable(tracking_points src/tracking_points.cpp)
 target_link_libraries(tracking_points ${catkin_LIBRARIES})

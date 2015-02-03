@@ -46,6 +46,11 @@ mapで名前も出せるようにする
 #include <humans_msgs/Humans.h>
 #include "okao_client/OkaoStack.h"
 
+#define HEAD 3
+#define SHOULDER_L 4
+#define SHOULDER_R 8
+#define SPINE_S 20
+
 using namespace cv;
 using namespace std;
 
@@ -57,7 +62,7 @@ class RIVision
 public:
   RIVision()
     : it_(nh_),
-    image_sub_( it_, "/camera/image/color", 100 ),
+    image_sub_( it_, "/camera_link/image/color", 100 ),
     humans_sub_( nh_, "/humans/RecogInfo", 100 ),
     sync( MySyncPolicy( 10 ), image_sub_, humans_sub_ )
   {
@@ -87,37 +92,61 @@ public:
       return;
     }
 
-    ros::ServiceClient okaoStack = nh_.serviceClient<okao_client::OkaoStack>("okao_stack");
+    ros::ServiceClient okaoStack = nh_.serviceClient<okao_client::OkaoStack>("stack_send");
     okao_client::OkaoStack stack;
 
 
     // Draw an example circle on the video stream
     for(int i= 0; i<okao_data->num; i++)
       {
-	cv::Scalar red(0,0,200);
-	cv::Point lt(okao_data->human[i].face.position.lt.x,
-	       okao_data->human[i].face.position.lt.y);
-	cv::Point rb(okao_data->human[i].face.position.rb.x,
-		      okao_data->human[i].face.position.rb.y);
-	cv::rectangle(cv_ptr->image,
-		      lt, 
-		      rb,
-		      red, 5, 8);
+	cv::Scalar color(0,200,0);
 
-	stack.request.rule = "req";
-	stack.request.okao_id = okao_data->human[i].max_okao_id;
+
+	//cv::Point lt(okao_data->human[i].body.position.lt.x,
+	//      okao_data->human[i].face.position.lt.y);
+	//cv::Point rb(okao_data->human[i].face.position.rb.x,
+	//	      okao_data->human[i].face.position.rb.y);
+
+
+	cv::Point top, bottom;
+	cv::Point head2d, neck2d;//, top, bottom;
+	head2d.x 
+	  = okao_data->human[i].body.joints[HEAD].position_color_space.x;	   
+	head2d.y 
+	  = okao_data->human[i].body.joints[HEAD].position_color_space.y;
+	
+	neck2d.x 
+	  = okao_data->human[i].body.joints[SPINE_S].position_color_space.x;	   
+	neck2d.y 
+	  = okao_data->human[i].body.joints[SPINE_S].position_color_space.y;
+	
+	double diff_w =  fabs(head2d.y-neck2d.y);
+	double diff_h =  fabs(head2d.y-neck2d.y);
+
+	top.x = head2d.x - diff_w;
+	top.y = head2d.y - diff_h;
+
+	bottom.x = head2d.x + diff_w;
+	bottom.y = head2d.y + diff_h;
+
+	cv::rectangle(cv_ptr->image,
+		      top, 
+		      bottom,
+		      color, 5, 8);
+
+	//stack.request.rule = "req";
+	stack.request.person.okao_id = okao_data->human[i].max_okao_id;
 	okaoStack.call(stack);	
 
 	std::stringstream idAndNameStream;
 	std::string idAndName;
-	idAndNameStream << okao_data->human[i].d_id <<","
-			<< stack.response.name << ","
-			<< okao_data->human[i].max_hist;
+	idAndNameStream << stack.response.person.name ;//<< ","
+	//<< okao_data->human[i].max_hist;
 	idAndName = idAndNameStream.str();	    
 	cout <<"recog[ "<<i<<" ]: " << idAndName << endl;
 	cv::putText(cv_ptr->image, idAndName,
-		    rb,
-		    FONT_HERSHEY_SIMPLEX, 2.5, red, 2, CV_AA);
+		    bottom,
+		    FONT_HERSHEY_SIMPLEX, 5, color, 4, CV_AA);
 	
       }
     image_pub_.publish(cv_ptr->toImageMsg());

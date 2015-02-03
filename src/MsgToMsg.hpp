@@ -20,6 +20,8 @@
 
 //using namespase std;
 
+double waittime = 1.0;
+
 namespace MsgToMsg{
 
   void bodyToBody(humans_msgs::Body src, humans_msgs::Body *dst)
@@ -142,6 +144,7 @@ namespace MsgToMsg{
       {
 	ROS_ERROR("Received an exception trying to transform a point to /map: %s", 
 		  ex.what());
+	//++waittime;
       }
 
   }

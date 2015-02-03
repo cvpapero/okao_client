@@ -1,5 +1,6 @@
 /*
-セーブポイント未対応
+セーブポイント対応
+ファイル出力機能
 
 2015.1.9----------------
 
@@ -16,6 +17,7 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <fstream>
 #include <iostream>
 //#include <time.h>
 
@@ -86,17 +88,79 @@ public:
     // = n.advertiseService("array_srv", 
     //			   &PeoplePositionServer::resHumans, this);
 
-    
+    file_input();
   }
   
   ~PeoplePositionServer()
   {
     //n_DBHuman.clear();
     //p_DBHuman.clear();
-   
+    file_output();
+
     o_DBHuman.clear();
   }
 
+  //o_DBHumanに書き込みのみ
+  //mat画像はokao_stack2がやる
+  void file_input()
+  {
+    cout << "file open" << endl;
+    //まず、ファイルは以下のような形式にする
+    //okao_id,name,hist,x,y,z 
+    //okao_idをみて、人物の位置をo_DBHumanに詰め込んでいく   
+    std::ifstream ifs("/home/yhirai/catkin_ws/src/okao_client/src/people/peopledata.txt");
+    if(ifs.fail())
+      {  // if(!fin)でもよい。
+	cout << "入力ファイルをオープンできません" << endl;
+	return;
+      }
+    humans_msgs::Human fhum;
+    humans_msgs::Person fperson;
+    while( (ifs >> fhum.max_okao_id >> fperson.name >> fhum.max_hist >> fhum.p.x >> fhum.p.y >> fhum.p.z )!=0 )
+      {
+	fhum.face.persons.push_back( fperson );
+	fhum.header.frame_id = "map";
+	fhum.header.stamp = ros::Time::now();
+	o_DBHuman[ fhum.max_okao_id ] = fhum;
+	cout <<"input:"<<endl << fhum << endl;
+      }
+    //cout << 
+  }
+
+  //ファイル出力する
+  //o_DBHuman
+  void file_output()
+  {
+    cout << "file write" << endl;
+    stringstream ss;
+    map<int, humans_msgs::Human>::iterator it_o = o_DBHuman.begin();
+    while( it_o != o_DBHuman.end() )
+      {
+	//if( it_o->second.body.tracking_id == req.src.body.tracking_id )
+	// {	
+	ss << it_o->second.max_okao_id << " " << "test" //it_o->second.face.persons[0].name 
+	   << " " << it_o->second.max_hist << " " << it_o->second.p.x 
+	   << " " << it_o->second.p.y << " " << it_o->second.p.z <<endl; 
+	  //<<" to frame_id: " << h_res.header.frame_id <<endl;
+	//transformPosition(it_o->second, &h_res);
+	//getPerson(it_o->second, &h_res);
+	
+	//h_res;
+	//res.dst = h_res;//it_o->second;
+	//return true;
+	cout << "write data:" << ss.str() <<endl;
+	++it_o; 
+      }
+
+    std::ofstream ofs("/home/yhirai/catkin_ws/src/okao_client/src/people/peopledata.txt");//,std::ios::out | std::ios::app );
+    if(ofs.fail())
+      {  // if(!fout)でもよい。
+        cout << "出力ファイルをオープンできません" << endl;
+        return;
+      }
+    ofs << ss.str() <<endl;
+
+  }
 
   void callback(const humans_msgs::HumansConstPtr& rein)
   {
@@ -132,24 +196,12 @@ public:
   {
    
     ROS_INFO("debug all human");
-    
-    //o_DBHuman内から、tracking_idをキーにして検索
+  
     map<int, humans_msgs::Human>::iterator it_o = o_DBHuman.begin();
     while( it_o != o_DBHuman.end() )
       {
-	//if( it_o->second.body.tracking_id == req.src.body.tracking_id )
-	// {
-	humans_msgs::Human h_res;
-	//h_res.header.frame_id = req.src.header.frame_id;
-	
+	humans_msgs::Human h_res;	
 	cout <<"name: "<< it_o->second.max_okao_id << " d_id:" << it_o->second.d_id<< endl; 
-	  //<<" to frame_id: " << h_res.header.frame_id <<endl;
-	//transformPosition(it_o->second, &h_res);
-	//getPerson(it_o->second, &h_res);
-	
-	//h_res;
-	//res.dst = h_res;//it_o->second;
-	//return true;
 	++it_o; 
       }
 

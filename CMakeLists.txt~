@@ -62,6 +62,7 @@ find_package(OpenCV REQUIRED)
 add_service_files(
   FILES
   OkaoStack.srv
+  OkaoName.srv
   OkaoPosSrv.srv
   LostTracking.srv
   testmsg.srv
@@ -182,6 +183,8 @@ find_library(ZMQ_LIBRARIE
 
 add_executable(OkaoClient src/OkaoClient.cpp)
 target_link_libraries(OkaoClient ${catkin_LIBRARIES} ${OpenCV_LIBS} ${ZMQ_LIBRARIE} msgpack)
+add_executable(OkaoClientTest src/OkaoClientTest.cpp)
+target_link_libraries(OkaoClientTest ${catkin_LIBRARIES} ${OpenCV_LIBS} ${ZMQ_LIBRARIE} msgpack)
 
 add_executable(okao_stack src/okao_stack.cpp)
 target_link_libraries(okao_stack ${catkin_LIBRARIES})
@@ -189,17 +192,17 @@ target_link_libraries(okao_stack ${catkin_LIBRARIES})
 add_executable(people_recog_info src/people_recog_info.cpp)
 target_link_libraries(people_recog_info ${catkin_LIBRARIES})
 
-add_executable(people_recog_info2 src/people_recog_info2.cpp)
-target_link_libraries(people_recog_info2 ${catkin_LIBRARIES})
+add_executable(people_recog_info2_1test src/people_recog_info2_1test.cpp)
+target_link_libraries(people_recog_info2_1test ${catkin_LIBRARIES})
 
 add_executable(people_recog_info2_1 src/people_recog_info2_1.cpp)
 target_link_libraries(people_recog_info2_1 ${catkin_LIBRARIES})
 
-#add_executable(people_position_client src/people_position_client.cpp)
-#target_link_libraries(people_position_client ${catkin_LIBRARIES})
+add_executable(people_position_server src/people_position_server.cpp)
+target_link_libraries(people_position_server ${catkin_LIBRARIES})
 
-#add_executable(recog_info_vision src/recog_info_vision.cpp)
-#target_link_libraries(recog_info_vision ${catkin_LIBRARIES} ${OpenCV_LIBS})
+add_executable(recog_info_vision src/recog_info_vision.cpp)
+target_link_libraries(recog_info_vision ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
 #add_executable(depth_to_laser2 src/depth_to_laser2.cpp)
 #target_link_libraries(depth_to_laser2 ${catkin_LIBRARIES} ${OpenCV_LIBS})
@@ -207,14 +210,14 @@ target_link_libraries(people_recog_info2_1 ${catkin_LIBRARIES})
 add_executable(face_mapping_publisher src/face_mapping_publisher.cpp)
 target_link_libraries(face_mapping_publisher ${catkin_LIBRARIES})
 
-add_executable(face_mapping_publisher2 src/face_mapping_publisher2.cpp)
-target_link_libraries(face_mapping_publisher2 ${catkin_LIBRARIES})
+add_executable(okao_stack2 src/okao_stack2.cpp)
+target_link_libraries(okao_stack2 ${catkin_LIBRARIES}  ${OpenCV_LIBS})
 
 add_executable(tracking_points src/tracking_points.cpp)
 target_link_libraries(tracking_points ${catkin_LIBRARIES})
 
-#add_executable(position_sub src/position_sub.cpp)
-#target_link_libraries(position_sub ${catkin_LIBRARIES})
+add_executable(okao_recog_per src/okao_recog_per.cpp)
+target_link_libraries(okao_recog_per ${catkin_LIBRARIES})
 
 #add_executable(humans_pass2 src/humans_pass2.cpp)
 #target_link_libraries(humans_pass2 ${catkin_LIBRARIES})
