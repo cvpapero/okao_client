@@ -32,8 +32,11 @@
 
 using namespace std;
 
-//map<int, humans_msgs::Human> n_DBHuman;
+//d_idに基づくDB
+map<int, humans_msgs::Human> d_DBHuman;
 //map<int, humans_msgs::Human> p_DBHuman;
+
+//okao_idに基づくDB
 map<int, humans_msgs::Human> o_DBHuman;
 
 class PeoplePositionServer
@@ -94,10 +97,10 @@ public:
   
   ~PeoplePositionServer()
   {
-    //n_DBHuman.clear();
+
     //p_DBHuman.clear();
     file_output();
-
+    d_DBHuman.clear();
     o_DBHuman.clear();
   }
 
@@ -189,7 +192,7 @@ public:
 	    //cout << "people data update! okao_id: " <<endl;;
 	  } 
       } 
-    allHumanPublisher();
+    //allHumanPublisher();
   }
 
   
@@ -426,7 +429,7 @@ int main(int argc, char** argv)
   PeoplePositionServer PPS;
   while(ros::ok())
     {
-      PPS. allHumanPublisher();
+      PPS.allHumanPublisher();
       ros::spinOnce();
     }
   //ros::spin();

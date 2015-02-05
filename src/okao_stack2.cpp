@@ -64,7 +64,7 @@ public:
 
   ~OkaoStackServer()
   {
-    outputImage();
+    //outputImage();
 
     stack.clear();
     imgstack.clear();
@@ -77,10 +77,10 @@ public:
     //まず、ファイルは以下のような形式にする
     //okao_id,name,hist,x,y,z 
     //okao_idをみて、人物の位置をo_DBHumanに詰め込んでいく   
-    std::ifstream ifs("/home/yhirai/catkin_ws/src/okao_client/src/people/peopledata.txt");
+    std::ifstream ifs("/home/yhirai/catkin_ws/src/okao_client/src/images/okaodata.txt");
     if(ifs.fail())
       {  // if(!fin)でもよい。
-	cout << "入力ファイルをオープンできません" << endl;
+	cout << "input file error!" << endl;
 	return;
       }
     //ファイル読み込み
@@ -95,7 +95,7 @@ public:
 	try
 	  {
 	    stringstream image_name;
-	    image_name <<"/home/yhirai/catkin_ws/src/okao_client/src/images/" << fhum.max_okao_id << ".jpg";
+	    image_name <<"/home/yhirai/catkin_ws/src/okao_client/src/images/okao" << fhum.max_okao_id << ".jpg";
 	    cv::Mat src = cv::imread(image_name.str());
 	    cout << "input: " << image_name.str() << endl;
 	    sensor_msgs::Image output;
@@ -139,7 +139,7 @@ public:
 	
 	cv::Mat out = cv_ptr->image;
 	stringstream ss;
-	ss <<"/home/yhirai/catkin_ws/src/okao_client/src/images/" << imgit->first <<".jpg";
+	ss <<"/home/yhirai/catkin_ws/src/okao_client/src/images/okao" << imgit->first <<".jpg";
 	cv::imwrite(ss.str(),cv_ptr->image);
 	 
 	++imgit;
@@ -164,7 +164,7 @@ public:
 	stack[ req.person.okao_id ] = req.person;//prop;
     
 	//if(stac)
-	imgstack[ req.person.okao_id ] = req.image;
+	//imgstack[ req.person.okao_id ] = req.image;
 	cout <<"add---> okao_id: "<< req.person.okao_id 
 	     <<", name: "<< req.person.name << endl;
       }

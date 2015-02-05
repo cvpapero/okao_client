@@ -213,8 +213,17 @@ target_link_libraries(recog_info_vision ${catkin_LIBRARIES} ${OpenCV_LIBS})
 add_executable(okao_stack2 src/okao_stack2.cpp)
 target_link_libraries(okao_stack2 ${catkin_LIBRARIES}  ${OpenCV_LIBS})
 
+add_executable(okao_stack2_1 src/okao_stack2_1.cpp)
+target_link_libraries(okao_stack2_1 ${catkin_LIBRARIES}  ${OpenCV_LIBS})
+
 add_executable(people_position_server2 src/people_position_server2.cpp)
 target_link_libraries(people_position_server2 ${catkin_LIBRARIES})
+
+add_executable(people_position_server2_1 src/people_position_server2_1.cpp)
+target_link_libraries(people_position_server2_1 ${catkin_LIBRARIES})
+
+add_executable(people_position_server2_2 src/people_position_server2_2.cpp)
+target_link_libraries(people_position_server2_2 ${catkin_LIBRARIES})
 
 add_executable(tracking_points src/tracking_points.cpp)
 target_link_libraries(tracking_points ${catkin_LIBRARIES})

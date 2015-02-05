@@ -1,7 +1,7 @@
 <launch>
 
 	<include file="$(find kinectv2client)/launch/kinect.launch" />
-	<node pkg="okao_client" type="okao_stack2" respawn="false" name="okao_stack" />
+	<node pkg="okao_client" type="okao_stack2_1" respawn="false" name="okao_stack" />
 	<node pkg="okao_client" type="people_recog_info2_1" respawn="false" name="people_recog_info" output="screen" />
 
 	<!--
