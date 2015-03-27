@@ -1,11 +1,47 @@
 /*
-2015.3.5--------------------------------
-一位と二位の投票数を使って
-人物信頼度の比を求める
+2014.1.22--------------------------------
+ここで座標変換は行わない。
+データベースモジュールでやる
+なぜなら、処理速度が落ちるから
 
-信頼度投票指標 = 一位の投票数/二位の投票数
 
-信頼度投票指標が2以上なら、確定
+2014.12.23--------------------------------
+いかにして初期化するか
+
+もう一つの方法。
+外部モジュールにtracking_IDを集めさせておき、
+人物を認識していないとき、req/res方式で見ていないidを貰い、それを使って消去する
+
+見ていないIDを集めておく
+どうやって集めるか？
+集めた後、人物を認識していないときに初期化処理を行っておく
+
+ 
+まず、tracking_idについてのヒストグラムとバッファを消去する状況を考えてみる
+それは、前回と同じtracking_idが、今回は入ってこなかったとき、と想定する
+では、その前回と今回の比較のために必要なものは何か
+前回のtracking_idが書かれた記録
+今回のtracking_idが書かれた記録
+前回のtracking_idを、一つずつ、今回のtracking_idのデータベースで検索をかけ、
+存在するなら保持
+存在しないなら初期化
+
+2014.12.22--------------------------------
+初期化処理がまだできていない
+
+
+顔がとれていなくてもtracking_idが存在すれば人物の位置を更新する
+そのときは、信頼度やヒストグラムはそのまま
+
+だから/humans/OkaoServerと/humans/OkaoServerNotからサブスクライブする
+
+callback関数の中で、okaoとokaoNotについての処理を行う
+1.okaoについて
+いままでどおりヒストグラムを更新してrecogに追加
+2.okaoNotについて
+tracking_idを検索して、もし存在したら、ヒストグラムの更新はせず,位置情報だけを更新してrecog_msgsに追加
+
+
 */
 
 #include <ros/ros.h>
@@ -18,7 +54,6 @@
 #include <vector>
 #include <map>
 #include <algorithm>
-#include <functional>
 
 #include <humans_msgs/Humans.h>
 #include "MsgToMsg.hpp"
@@ -74,7 +109,7 @@ public:
     hist.clear();
   }
 
-  void histogram(int d_id, int *o_id, int *o_conf, int *maxOkaoId, int *maxHist, double *magni)
+  void histogram(int d_id, int *o_id, int *o_conf, int *maxOkaoId, int *maxHist)
   {
     for(int i = 0; i < OKAO; ++i)
       {
@@ -83,26 +118,14 @@ public:
       }
  
     //最大値のヒストグラムとそのOKAO_IDを出力
-    //二位との比も出力したい
-  
-    vector<int> hist_pool;
-    map<int,int> hist_to_okao;
-
     for(int i = 0; i < OKAO_MAX; ++i)
       {
-	hist_pool.push_back( hist[d_id][i] );
-	hist_to_okao[hist[d_id][i]] = i;
+	if(hist[d_id][i] > hist[d_id][*maxOkaoId])
+	  {
+	    *maxOkaoId = i;
+	    *maxHist = hist[ d_id ][ i ];
+	  }
       }
-
-    //投票結果のソート
-    sort( hist_pool.begin(), hist_pool.end(), 
-	  greater<int>() );
-
-    //cout << "secondHist: "<<hist_pool[1]<<endl;
-    //一位と二位の倍率を出力
-    *maxOkaoId = hist_to_okao[hist_pool[0]];
-    *maxHist = hist_pool[0];
-    *magni = (double)hist_pool[0]/(double)hist_pool[1];
   }
 
   void callback(
@@ -147,13 +170,12 @@ public:
 		  = okao->human[p_i].face.persons[i].conf;
 	      }
 	    int maxOkaoId = 0, maxHist = 0;
-	    double magni = 0.0;
-	    histogram( (d_id) , o_id, o_conf, &maxOkaoId, &maxHist, &magni );
+	    histogram( (d_id) , o_id, o_conf, &maxOkaoId, &maxHist );
 
 	    cout <<"face found[ " << ros::Time::now() 
 		 << " ], d_id: "<<d_id << ", tracking_id: "
 		 << tracking_id << " ---> max id: "
-		 << maxOkaoId <<", max hist: " << maxHist << ", magni: " << magni << endl;
+		 << maxOkaoId <<", max hist: " << maxHist << endl;
 
 	    humans_msgs::Human h;
 	    MsgToMsg::bodyAndFaceToMsg( 
@@ -184,7 +206,6 @@ public:
 	    h.d_id = d_id;
 	    h.max_okao_id = maxOkaoId;
 	    h.max_hist = maxHist;
-	    h.magni = magni;
 	    h.header.stamp = t;
 	    h.header.frame_id = okao->header.frame_id;
 	    h.p = h_point.point;
@@ -213,13 +234,12 @@ public:
 		//人物情報の取得
 		int o_id[OKAO] = {0}, o_conf[OKAO] = {0};
 		int maxOkaoId = 0, maxHist = 0;
-		double magni = 0.0;
-		histogram( (d_id) , o_id, o_conf, &maxOkaoId, &maxHist, &magni );
+		histogram( (d_id) , o_id, o_conf, &maxOkaoId, &maxHist );
 
 		cout <<"face not found[ " << ros::Time::now() 
 		     << " ], d_id: "<<d_id << ", tracking_id: "
 		     << tracking_id << " ---> max id: "
-		     << maxOkaoId <<", max hist: " << maxHist << ", magni: " << magni << endl;
+		     << maxOkaoId <<", max hist: " << maxHist << endl;
 
 		//人物位置の更新
 		ros::Time t = okaoNot->header.stamp;
@@ -234,7 +254,14 @@ public:
 		  = t;
 		h_point.header.frame_id 
 		  = okaoNot->header.frame_id;
-	    
+		
+		//geometry_msgs::PointStamped pst;
+		//pst.header.stamp = t;
+		//pst.header.frame_id = "map";
+		//pst.header.frame_id = okaoNot->header.frame_id;
+		//std::string camera_frame = okao->header.frame_id;
+		//MsgToMsg::transformHead( h_point, &pst );
+
 		humans_msgs::Human h;
 
 		humans_msgs::Body b;
@@ -246,7 +273,6 @@ public:
 		h.d_id = d_id;
 		h.max_okao_id =  maxOkaoId;
 		h.max_hist = maxHist;
-		h.magni = magni;
 		//h.p = pst.point;
 		h.header.stamp = t;
 		h.header.frame_id = okaoNot->header.frame_id;

@@ -297,11 +297,10 @@ public:
 			cv::Point rb_out = rb;
 			cv::Scalar red(0,0,200);
 			cv::Scalar green(0,200,0);
-			cv::rectangle( cv_ptr->image, lt, rb, green, 5, 8);
-		
+			cv::rectangle( cv_ptr->image, top, bottom, red, 5, 8);
 			cv::putText( cv_ptr->image, face_msg.persons[0].name, 
-				     rb_out, FONT_HERSHEY_SIMPLEX, 5, 
-				     green, 2, CV_AA);
+				     bottom, FONT_HERSHEY_SIMPLEX, 3, 
+				     red, 2, CV_AA);
 			
 			ros::ServiceClient client = nh_.serviceClient<
 			  okao_client::OkaoStack>("stack_add");

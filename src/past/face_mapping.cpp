@@ -61,74 +61,71 @@ public:
   void callback(const humans_msgs::HumansConstPtr& rein)
   {
 
-    visualization_msgs::MarkerArray mapping_points, mapping_lines, mapping_names;
+    visualization_msgs::MarkerArray points, lines, names;
     //認識人数の取得
     int p_num = rein->num;
     
-    //メモリの確保
-    //mapping_points.markers.resize(p_num);
-    //mapping_lines.markers.resize(p_num);
-    //mapping_names.markers.resize(p_num);
-
     ros::Time map_time = ros::Time::now();      
     float pr,pg,pb,pa,br,bg,bb,ba; 
     float ts,ps,ls,bs;
     
     for(int i = 0; i < p_num ; ++i)
       {
-	if( rein->d_id )
+	if( rein->human[i].d_id )
 	  { 
 	    ros::ServiceClient okaoStack = n.serviceClient<okao_client::OkaoStack>("okao_stack");
 	    okao_client::OkaoStack stack;
+	    visualization_msgs::Marker point, line, name;
+
 	    stack.request.rule = "req";
 	    stack.request.okao_id = rein->human[i].max_okao_id;
 	    okaoStack.call(stack);
 	    
-	    mapping_points.markers[i].header.frame_id =  mapping_lines.markers[i].header.frame_id = mapping_names.markers[i].header.frame_id = "/map";
-	    mapping_points.markers[i].header.stamp = mapping_lines.markers[i].header.stamp = mapping_names.markers[i].header.stamp = ros::Time::now();
-	    mapping_points.markers[i].id = mapping_lines.markers[i].id = mapping_names.markers[i].id = rein->human[i].d_id;
-	    mapping_points.markers[i].action = mapping_lines.markers[i].action = mapping_names.markers[i].action = visualization_msgs::Marker::ADD;
-	    mapping_points.markers[i].pose.orientation.w = mapping_lines.markers[i].pose.orientation.w = mapping_names.markers[i].pose.orientation.w = 1.0;
+	    point.header.frame_id =  line.header.frame_id = name.header.frame_id = "/map";
+	    point.header.stamp = line.header.stamp = name.header.stamp = ros::Time::now();
+	    point.id = line.id = name.id = rein->human[i].d_id;
+	    point.action = line.action = name.action = visualization_msgs::Marker::ADD;
+	    point.pose.orientation.w = line.pose.orientation.w = name.pose.orientation.w = 1.0;
 	    
-	    mapping_points.markers[i].ns =   "points";
-	    mapping_lines.markers[i].ns =    "lines";
-	    mapping_names.markers[i].ns =    "names";
+	    point.ns = "points";
+	    line.ns = "lines";
+	    name.ns = "names";
 	    
-	    mapping_points.markers[i].type = visualization_msgs::Marker::POINTS;
-	    mapping_lines.markers[i].type =  visualization_msgs::Marker::LINE_STRIP;	      
-	    mapping_names.markers[i].type =  visualization_msgs::Marker::TEXT_VIEW_FACING;
-	    
+	    point.type = visualization_msgs::Marker::POINTS;
+	    line.type = visualization_msgs::Marker::LINE_STRIP;	      
+	    name.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+	    /* 
 	    //humans_msgs::Joints joint;
 	    geometry_msgs::PointStamped pst;
 	    pst.header.stamp = ros::Time::now();
 	    pst.header.frame_id = "/map";
 	    MsgToMsg::transformHead( rein->human[i].p, &pst );
-	    
+	    */
 	    geometry_msgs::Point pt0, pt1;
-	    pt0.x = pst.point.x;
-	    pt0.y = pst.point.y;
+	    pt0.x = rein->human[i].p.x;
+	    pt0.y = rein->human[i].p.y;
 	    pt0.z = 0; 
 	    pt1.x = pt0.x + 1.0;
 	    pt1.y = pt0.y + 1.0;
 	    pt1.z = pt0.z + 1.0;
 	    
-	    mapping_points.markers[i].points.resize(1);
-	    mapping_lines.markers[i].points.resize(2);
+	    point.points.resize(1);
+	    line.points.resize(2);
 	    
-	    mapping_points.markers[i].points[0].x = pt0.x;
-	    mapping_points.markers[i].points[0].y = pt0.y;
-	    mapping_points.markers[i].points[0].z = pt0.z;
+	    point.points[0].x = pt0.x;
+	    point.points[0].y = pt0.y;
+	    point.points[0].z = pt0.z;
 	    
-	    mapping_lines.markers[i].points[0].x = pt0.x;
-	    mapping_lines.markers[i].points[0].y = pt0.y;
-	    mapping_lines.markers[i].points[0].z = pt0.z;
-	    mapping_lines.markers[i].points[1].x = pt1.x;
-	    mapping_lines.markers[i].points[1].y = pt1.y;
-	    mapping_lines.markers[i].points[1].z = pt1.z;
+	    line.points[0].x = pt0.x;
+	    line.points[0].y = pt0.y;
+	    line.points[0].z = pt0.z;
+	    line.points[1].x = pt1.x;
+	    line.points[1].y = pt1.y;
+	    line.points[1].z = pt1.z;
 	    
-	    mapping_names.markers[i].pose.position.x = pt1.x;
-	    mapping_names.markers[i].pose.position.y = pt1.y;
-	    mapping_names.markers[i].pose.position.z = pt1.z; 
+	    name.pose.position.x = pt1.x;
+	    name.pose.position.y = pt1.y;
+	    name.pose.position.z = pt1.z; 
 	    
 	    if(rein->human[i].max_hist > 10)
 	      {	      
@@ -163,23 +160,27 @@ public:
 		ls = 0.05;
 	      }
 	    
-	    mapping_points.markers[i].color.r = mapping_lines.markers[i].color.r = mapping_names.markers[i].color.r = pr;
-	    mapping_points.markers[i].color.g = mapping_lines.markers[i].color.g = mapping_names.markers[i].color.g = pg;
-	    mapping_points.markers[i].color.b = mapping_lines.markers[i].color.b = mapping_names.markers[i].color.b = pb;
-	    mapping_points.markers[i].color.a = mapping_lines.markers[i].color.a = mapping_names.markers[i].color.a = pa;
+	    point.color.r = line.color.r = name.color.r = pr;
+	    point.color.g = line.color.g = name.color.g = pg;
+	    point.color.b = line.color.b = name.color.b = pb;
+	    point.color.a = line.color.a = name.color.a = pa;
 	    
-	    mapping_names.markers[i].scale.z = ts;
-	    mapping_points.markers[i].scale.x = ps;    
-	    mapping_lines.markers[i].scale.x = ls;  
+	    name.scale.z = ts;
+	    point.scale.x = point.scale.y = ps;    
+	    line.scale.x = ls;  
 	    
 	    string idtext = toString<int>(rein->human[i].d_id);
 	    string histtext = toString<int>(rein->human[i].max_hist);
-	    mapping_names.markers[i].text = idtext +","+ stack.response.name +","+ histtext;
+	    name.text = idtext +","+ stack.response.name +","+ histtext;
+
+	    points.markers.push_back( point );
+	    lines.markers.push_back( line );
+	    names.markers.push_back( name );
 	  }
       }
-    markerArray_pub_.publish(mapping_points);
-    markerArray_pub_.publish(mapping_lines);
-    markerArray_pub_.publish(mapping_names);
+    markerArray_pub_.publish( points );
+    markerArray_pub_.publish( lines );
+    markerArray_pub_.publish( names );
   }
 };
 

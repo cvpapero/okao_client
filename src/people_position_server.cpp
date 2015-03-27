@@ -1,5 +1,14 @@
 /*
-セーブポイント未対応
+2015.3.9---------------
+今後実装すること
+magniに基づいて、OKAO_IDを信頼してそのまま保存するか
+あるいは、不安定だけど一応OKAO_ID暫定的に保存するか
+
+
+d_idに基づいてパブリッシュ
+
+セーブポイント対応
+ファイル出力機能
 
 2015.1.9----------------
 
@@ -16,6 +25,7 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <fstream>
 #include <iostream>
 //#include <time.h>
 
@@ -28,10 +38,15 @@
 #include "okao_client/OkaoStack.h"
 #include "MsgToMsg.hpp"
 
+#define MAGNI 1.5
+
 using namespace std;
 
-//map<int, humans_msgs::Human> n_DBHuman;
+//d_idに基づくDB
+map<int, humans_msgs::Human> d_DBHuman;
 //map<int, humans_msgs::Human> p_DBHuman;
+
+//okao_idに基づくDB
 map<int, humans_msgs::Human> o_DBHuman;
 
 class PeoplePositionServer
@@ -86,17 +101,81 @@ public:
     // = n.advertiseService("array_srv", 
     //			   &PeoplePositionServer::resHumans, this);
 
-    
+    file_input();
+    //allHumanPublisher();
   }
   
   ~PeoplePositionServer()
   {
-    //n_DBHuman.clear();
+
     //p_DBHuman.clear();
-   
+    file_output();
+    d_DBHuman.clear();
     o_DBHuman.clear();
   }
 
+  //o_DBHumanに書き込みのみ
+  //mat画像はokao_stack2がやる
+  void file_input()
+  {
+    cout << "file open" << endl;
+    //まず、ファイルは以下のような形式にする
+    //okao_id,name,hist,x,y,z 
+    //okao_idをみて、人物の位置をo_DBHumanに詰め込んでいく   
+    std::ifstream ifs("/home/yhirai/catkin_ws/src/okao_client/src/people/peopledata.txt");
+    if(ifs.fail())
+      {  // if(!fin)でもよい。
+	cout << "file not open" << endl;
+	return;
+      }
+    humans_msgs::Human fhum;
+    humans_msgs::Person fperson;
+    while( (ifs >> fhum.max_okao_id >> fperson.name >> fhum.max_hist >> fhum.p.x >> fhum.p.y >> fhum.p.z )!=0 )
+      {
+	fhum.face.persons.push_back( fperson );
+	fhum.header.frame_id = "map";
+	fhum.header.stamp = ros::Time::now();
+	o_DBHuman[ fhum.max_okao_id ] = fhum;
+	cout <<"input:"<<endl << fhum.max_okao_id << endl << fhum.p << endl;
+      }
+    //cout << 
+  }
+
+  //ファイル出力する
+  //o_DBHuman
+  void file_output()
+  {
+    cout << "file write" << endl;
+    stringstream ss;
+    map<int, humans_msgs::Human>::iterator it_o = o_DBHuman.begin();
+    while( it_o != o_DBHuman.end() )
+      {
+	//if( it_o->second.body.tracking_id == req.src.body.tracking_id )
+	// {	
+	ss << it_o->second.max_okao_id << " " << "test" //it_o->second.face.persons[0].name 
+	   << " " << it_o->second.max_hist << " " << it_o->second.p.x 
+	   << " " << it_o->second.p.y << " " << it_o->second.p.z <<endl; 
+	  //<<" to frame_id: " << h_res.header.frame_id <<endl;
+	//transformPosition(it_o->second, &h_res);
+	//getPerson(it_o->second, &h_res);
+	
+	//h_res;
+	//res.dst = h_res;//it_o->second;
+	//return true;
+
+	++it_o; 
+      }
+
+    std::ofstream ofs("/home/yhirai/catkin_ws/src/okao_client/src/people/peopledata_d.txt");
+
+    if(ofs.fail())
+      {  // if(!fout)でもよい。
+        cout << "file not open" << endl;
+        return;
+      }
+    ofs << ss.str() <<endl;
+    cout << "write data:" << ss.str() <<endl;
+  }
 
   void callback(const humans_msgs::HumansConstPtr& rein)
   {
@@ -114,17 +193,20 @@ public:
 	  {
 	    humans_msgs::Human ah;
 	    ah.header.frame_id = "map";//重要
+	    ah.header.stamp = rein->header.stamp;
 	    transformPosition( rein->human[ i ] ,&ah );
+	    ah.magni = rein->human[ i ].magni;
 	    //ah.header.stamp = ros::Time::now();
 	    //ah = rein->human[ i ];
 	    //n_DBHuman[ i ] = ah;
-	    // p_DBHuman[ rein->human[ i ].d_id ] = ah;
+	    d_DBHuman[ rein->human[ i ].d_id ] = ah;
 	    o_DBHuman[ rein->human[ i ].max_okao_id ] = ah;
+
 	    ROS_INFO("people data update! okao_id: %d", rein->human[ i ].max_okao_id );
 	    //cout << "people data update! okao_id: " <<endl;;
 	  } 
       } 
-    allHumanPublisher();
+    //allHumanPublisher();
   }
 
   
@@ -132,24 +214,12 @@ public:
   {
    
     ROS_INFO("debug all human");
-    
-    //o_DBHuman内から、tracking_idをキーにして検索
+  
     map<int, humans_msgs::Human>::iterator it_o = o_DBHuman.begin();
     while( it_o != o_DBHuman.end() )
       {
-	//if( it_o->second.body.tracking_id == req.src.body.tracking_id )
-	// {
-	humans_msgs::Human h_res;
-	//h_res.header.frame_id = req.src.header.frame_id;
-	
+	humans_msgs::Human h_res;	
 	cout <<"name: "<< it_o->second.max_okao_id << " d_id:" << it_o->second.d_id<< endl; 
-	  //<<" to frame_id: " << h_res.header.frame_id <<endl;
-	//transformPosition(it_o->second, &h_res);
-	//getPerson(it_o->second, &h_res);
-	
-	//h_res;
-	//res.dst = h_res;//it_o->second;
-	//return true;
 	++it_o; 
       }
 
@@ -164,16 +234,16 @@ public:
     //ROS_INFO("all human publisher");
     humans_msgs::PersonPoseImgArray ppia;
     //o_DBHuman内から、tracking_idをキーにして検索
-    map<int, humans_msgs::Human>::iterator it_o = o_DBHuman.begin();
-    while( it_o != o_DBHuman.end() )
+    map<int, humans_msgs::Human>::iterator it_d = d_DBHuman.begin();
+    while( it_d != d_DBHuman.end() )
       {
 	//	cout <<"name: "<< it_o->second.max_okao_id << " d_id:" << it_o->second.d_id<< endl; 
 	humans_msgs::PersonPoseImg ppi;
-	getOkaoStack( it_o->second, &ppi );
+	getOkaoStack( it_d->second, &ppi );
 
 	ppia.ppis.push_back( ppi );
 
-	++it_o; 
+	++it_d; 
       }
     ppia.header.stamp = ros::Time::now();
     ppia.header.frame_id = "map";
@@ -183,21 +253,39 @@ public:
   void getOkaoStack(humans_msgs::Human hum, humans_msgs::PersonPoseImg *ppi)
   {
     okao_client::OkaoStack stack;
-    
+    stack.request.header.stamp = hum.header.stamp;
+
+    //cout << "magni: "<< (double)hum.magni<<endl; 
+
+    //if((double)hum.magni > (double)MAGNI)
+    //  {
     stack.request.person.okao_id = hum.max_okao_id;
-    okaoStack_.call( stack );
+    //  }
+    /*
+    else
+      {
+	stack.request.person.okao_id = 0;
+      }
+    */
+    if( okaoStack_.call( stack ) )
+      {
     
-    ppi->person.hist = hum.max_hist;
-    ppi->person.okao_id = hum.max_okao_id;
-    ppi->person.name = stack.response.person.name;
-    ppi->pose.position = hum.p;
-    ppi->pose.orientation.w = 1;
-    
-    ppi->image = stack.response.image;
-    ppi->header.stamp = ros::Time::now();
-    ppi->header.frame_id = hum.header.frame_id;
-    //cout << hum.header.frame_id <<endl;
-    //dbhuman[rein->human[i].max_okao_id] = ppi;
+	ppi->person.hist = hum.max_hist;
+	ppi->person.okao_id = hum.max_okao_id;
+	ppi->person.name = stack.response.person.name;
+	ppi->pose.position = hum.p;
+	ppi->pose.orientation.w = 1;
+	
+	ppi->image = stack.response.image;
+	ppi->header.stamp = ros::Time::now();
+	ppi->header.frame_id = hum.header.frame_id;
+	//cout << hum.header.frame_id <<endl;
+	//dbhuman[rein->human[i].max_okao_id] = ppi;
+      }
+    else
+      {
+	cout << "okao_id: " << hum.max_okao_id << " has not stack!" <<endl;
+      }
   }
 
   //現在はbody.pのみ
@@ -220,6 +308,9 @@ public:
     hdst->d_id = hsrc.d_id;
     hdst->max_okao_id = hsrc.max_okao_id;
     hdst->max_hist = hsrc.max_hist;
+
+    //tracking_id
+    hdst->body.tracking_id = hsrc.body.tracking_id;
   }
 
 
@@ -234,10 +325,11 @@ public:
     hdst->persons.push_back( person );
   }
   
+
   bool resTrackingId(humans_msgs::HumanSrv::Request &req,
 		     humans_msgs::HumanSrv::Response &res)
   {
-    cout<<"tracking_id"<< req.src.body.tracking_id << endl;
+    cout<<"tracking_id:"<< req.src.body.tracking_id << endl;
 
     //o_DBHuman内から、tracking_idをキーにして検索
     map<int, humans_msgs::Human>::iterator it_o = o_DBHuman.begin();
@@ -257,12 +349,12 @@ public:
 	    h_res.p = it_o->second.p;
 	    h_res.face = f_res;
 	    res.dst = h_res;
-	    
+	    cout <<"response name: " << f_res.persons[0].name << endl;
 	    return true;
 	  }
 	++it_o;
       }
-    cout<<"no tracking_id"<< req.src.body.tracking_id << endl;
+    cout<<"no tracking_id:"<< req.src.body.tracking_id << endl;
     return false;
   }
   
@@ -364,6 +456,11 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "people_position_server");
   PeoplePositionServer PPS;
-  ros::spin();
+  while(ros::ok())
+    {
+      PPS.allHumanPublisher();
+      ros::spinOnce();
+    }
+  //ros::spin();
   return 0;
 }

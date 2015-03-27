@@ -99,7 +99,7 @@ public:
     // Draw an example circle on the video stream
     for(int i= 0; i<okao_data->num; i++)
       {
-	cv::Scalar color(0,200,0);
+	cv::Scalar color(0,0,200);
 
 
 	//cv::Point lt(okao_data->human[i].body.position.lt.x,
@@ -146,7 +146,7 @@ public:
 	cout <<"recog[ "<<i<<" ]: " << idAndName << endl;
 	cv::putText(cv_ptr->image, idAndName,
 		    bottom,
-		    FONT_HERSHEY_SIMPLEX, 5, color, 4, CV_AA);
+		    FONT_HERSHEY_SIMPLEX, 3, color, 2, CV_AA);
 	
       }
     image_pub_.publish(cv_ptr->toImageMsg());

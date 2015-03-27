@@ -31,6 +31,9 @@ int d_id = 0;
 //long long now_tracking_id[BODY_MAX] = {0};
 template<class T> inline std::string toString(T x) {std::ostringstream sout;sout<<x;return sout.str();}
 
+
+
+
 class RecogInfo
 {
 private:
@@ -46,7 +49,7 @@ private:
   //ファイル出力
   stringstream name;
   
-  
+  //ros::Time start;
 
   typedef message_filters::Subscriber< 
     humans_msgs::Humans > HumansSubscriber; 
@@ -74,7 +77,7 @@ public:
 	 << toString(pnow->tm_min) << toString(pnow->tm_sec); 
     sync.registerCallback( boost::bind( &RecogInfo::callback, this, _1, _2 ) );
     frame = 0;    
-
+    start = ros::Time::now();
     recog_pub_ = 
       nh.advertise<humans_msgs::Humans>("/humans/RecogInfo", 1);
   }
@@ -112,10 +115,15 @@ public:
 	//string namestr = name.str();
 
       }
+    time_t now_f = time(NULL);
+    struct tm *pnow_f = localtime(&now_f);
+
     framess << toString( frame );
     didss << toString( d_id ); 
     std::ofstream ofs( name.str().c_str(), std::ios::out | std::ios::app );
-    ofs <<"d_id: " << didss.str() << ", frame: "  << framess.str() << endl << ss.str() << endl;
+    ofs <<"d_id: " << didss.str() << ", frame: "  << framess.str() 
+	<< ", time: " << tuString( ros::Time::now - start ) //toString(pnow_f->tm_min) << ":" << toString(pnow_f->tm_sec)
+	<< endl << ss.str() << endl;
     ++frame;
   }
 

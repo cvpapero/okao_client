@@ -6,6 +6,8 @@
 信頼度投票指標 = 一位の投票数/二位の投票数
 
 信頼度投票指標が2以上なら、確定
+
+それから、マルチスレッドでokao Not とokaoを動かす
 */
 
 #include <ros/ros.h>
@@ -45,7 +47,7 @@ private:
   map<long, int> tracking_id_buf;
   map<int, map<int, int> > hist;
   //vector<long> now_tracking_id;
-
+  /*
   typedef message_filters::Subscriber< 
     humans_msgs::Humans > HumansSubscriber; 
 
@@ -56,14 +58,19 @@ private:
     > MySyncPolicy;
 
   message_filters::Synchronizer< MySyncPolicy > sync;
+  */
 
 public:
-  RecogInfo() :
-    okao_sub( nh, "/humans/OkaoServer", 100 ),
-    okaoNot_sub( nh, "/humans/OkaoServerNot", 100 ), 
-    sync( MySyncPolicy( 100 ), okao_sub, okaoNot_sub )
+  RecogInfo() 
   {
-    sync.registerCallback( boost::bind( &RecogInfo::callback, this, _1, _2 ) );
+
+    okao_sub = nh.subscribe("/humans/OkaoServer", 1
+			    &RecogInfo::okaoCallback, this),
+      //okaoNot_sub( nh, "/humans/OkaoServerNot"
+    okaoNot_sub = nh.subscribe("/humans/OkaoServerNot", 1
+			       &RecogInfo::okaoNotCallback, this), 
+      //sync( MySyncPolicy( 100 ), okao_sub, okaoNot_sub )
+    //sync.registerCallback( boost::bind( &RecogInfo::callback, this, _1, _2 ) );
     
     recog_pub_ = 
       nh.advertise<humans_msgs::Humans>("/humans/RecogInfo", 1);
@@ -105,9 +112,8 @@ public:
     *magni = (double)hist_pool[0]/(double)hist_pool[1];
   }
 
-  void callback(
-		const humans_msgs::HumansConstPtr& okao,
-		const humans_msgs::HumansConstPtr& okaoNot
+  void okaoCallback(
+		const humans_msgs::HumansConstPtr& okao
 		)
   {
     humans_msgs::Humans recog;
@@ -194,7 +200,9 @@ public:
 	    ++okao_recog_num;
 	  }
       }
+  }
 
+		const humans_msgs::HumansConstPtr& okaoNot
     //okaoNotについての処理
     int okaoNot_num = okaoNot->num;
     int okaoNot_recog_num = 0;
@@ -297,6 +305,7 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "people_recog_info");
   RecogInfo RIObject;
-  ros::spin();
+  ros::MultiThreadedSpinner spinner(2); // Use 3 threads
+  spinner.spin();
   return 0;
 }

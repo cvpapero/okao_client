@@ -62,8 +62,7 @@ private:
 public:
   FaceMapping()
   {
-    //図形メッセージをパブリッシュ
-    //markerArray_pub_ = n.advertise<visualization_msgs::MarkerArray>("/visualization_marker_array", 10);
+ 
     recogInfo_sub_ = n.subscribe("/humans/OkaoServer", 1, &FaceMapping::callback, this);
   }
 

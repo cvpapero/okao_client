@@ -6,6 +6,11 @@
 信頼度投票指標 = 一位の投票数/二位の投票数
 
 信頼度投票指標が2以上なら、確定
+
+それから、マルチスレッドでokao Not とokaoを動かす
+
+しかし、マルチスレッドにするなら、どこでその二つの情報を統合するか？
+すべてのトラッキングする人物において
 */
 
 #include <ros/ros.h>
@@ -31,8 +36,6 @@ using namespace std;
 #define HEAD 3
 
 int d_id = 0;
-//long long now_tracking_id[BODY_MAX] = {0};
-
 
 class RecogInfo
 {
@@ -40,30 +43,22 @@ private:
   ros::NodeHandle nh;
   ros::Publisher recog_pub_;
   ros::Publisher path_pub_;
-  //  ros::Subscriber okao_sub_;
+  ros::Subscriber okao_sub;
+  ros::Subscriber okaoNot_sub;
 
   map<long, int> tracking_id_buf;
   map<int, map<int, int> > hist;
   //vector<long> now_tracking_id;
-
-  typedef message_filters::Subscriber< 
-    humans_msgs::Humans > HumansSubscriber; 
-
-  HumansSubscriber okao_sub, okaoNot_sub;
-
-  typedef message_filters::sync_policies::ApproximateTime<
-    humans_msgs::Humans, humans_msgs::Humans
-    > MySyncPolicy;
-
-  message_filters::Synchronizer< MySyncPolicy > sync;
+  
 
 public:
-  RecogInfo() :
-    okao_sub( nh, "/humans/OkaoServer", 100 ),
-    okaoNot_sub( nh, "/humans/OkaoServerNot", 100 ), 
-    sync( MySyncPolicy( 100 ), okao_sub, okaoNot_sub )
+  RecogInfo() 
   {
-    sync.registerCallback( boost::bind( &RecogInfo::callback, this, _1, _2 ) );
+
+    okao_sub = nh.subscribe("/humans/OkaoServer", 1
+			    &RecogInfo::okaoCallback, this);
+    okaoNot_sub = nh.subscribe("/humans/OkaoServerNot", 1
+			       &RecogInfo::okaoNotCallback, this); 
     
     recog_pub_ = 
       nh.advertise<humans_msgs::Humans>("/humans/RecogInfo", 1);
@@ -105,9 +100,8 @@ public:
     *magni = (double)hist_pool[0]/(double)hist_pool[1];
   }
 
-  void callback(
-		const humans_msgs::HumansConstPtr& okao,
-		const humans_msgs::HumansConstPtr& okaoNot
+  void okaoCallback(
+		const humans_msgs::HumansConstPtr& okao
 		)
   {
     humans_msgs::Humans recog;
@@ -175,12 +169,6 @@ public:
 	    h_point.header.frame_id 
 	      = okao->header.frame_id;
 
-	    //geometry_msgs::PointStamped pst;
-	    //pst.header.stamp = t;
-	    //pst.header.frame_id = "map";
-	    //std::string camera_frame = okao->header.frame_id;
-	    //MsgToMsg::transformHead( h_point, &pst );
-
 	    h.d_id = d_id;
 	    h.max_okao_id = maxOkaoId;
 	    h.max_hist = maxHist;
@@ -194,7 +182,12 @@ public:
 	    ++okao_recog_num;
 	  }
       }
+  }
 
+  void okaoCallback(		
+		    const humans_msgs::HumansConstPtr& okaoNot
+				)
+  {
     //okaoNotについての処理
     int okaoNot_num = okaoNot->num;
     int okaoNot_recog_num = 0;
@@ -281,8 +274,8 @@ public:
       {
 	//見ていないtracking_idのリクエスト
 	/*
-tracking_id_buf.erase(lost_tracking_id);
-hist.erase(lost_d_id);
+	  tracking_id_buf.erase(lost_tracking_id);
+	  hist.erase(lost_d_id);
 	 */
       }
 
@@ -297,6 +290,7 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "people_recog_info");
   RecogInfo RIObject;
-  ros::spin();
+  ros::MultiThreadedSpinner spinner(2); // Use 3 threads
+  spinner.spin();
   return 0;
 }
