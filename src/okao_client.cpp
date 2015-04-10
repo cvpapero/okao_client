@@ -62,26 +62,18 @@ static const std::string OPENCV_WINDOW = "OKAO Client Window";
 using namespace cv;
 using namespace std;
 
-/*
-class POS
-{
-public:
-  double x;
-  double y;
-  double depth;
-};
-*/
 
-class MyClass 
+
+class OkaoClient 
 {
 public:
-  MyClass() :
+  OkaoClient() :
     it_(nh_),
     image_sub_( it_, "/camera/image/color", 100 ),
-    humans_sub_( nh_, "/humans/KinectV2", 100 ),
+    humans_sub_( nh_, "/humans/kinect_v2", 100 ),
     sync( MySyncPolicy( 100 ), image_sub_, humans_sub_ )
   {
-    sync.registerCallback( boost::bind( &MyClass::callback, this, _1, _2 ) );
+    sync.registerCallback( boost::bind( &OkaoClient::okaoClientCallback, this, _1, _2 ) );
 
     //ソケットの作成
     responder = new zmq::socket_t(context, ZMQ_REQ);
@@ -99,14 +91,14 @@ public:
     image_pub_ 
       = it_.advertise("/camera/image/face_detect",1);
     discovery_pub_ 
-      = nh_.advertise<humans_msgs::Humans>("/humans/OkaoServer",10);
+      = nh_.advertise<humans_msgs::Humans>("/humans/okao_server",10);
     undiscovered_pub_ 
-      = nh_.advertise<humans_msgs::Humans>("/humans/OkaoServerNot",10);
+      = nh_.advertise<humans_msgs::Humans>("/humans/okao_server_not",10);
     //ウィンドウ
     cv::namedWindow(OPENCV_WINDOW);
   }
 
-  ~MyClass()
+  ~OkaoClient()
   {
     cv::destroyWindow(OPENCV_WINDOW);
     if( responder )
@@ -139,10 +131,10 @@ public:
 }
   
 
-  void callback(
-		const sensor_msgs::ImageConstPtr& imgmsg,
-		const humans_msgs::HumansConstPtr& kinect
-		)
+  void okaoClientCallback(
+			  const sensor_msgs::ImageConstPtr& imgmsg,
+			  const humans_msgs::HumansConstPtr& kinect
+			  )
   {  
     int okao_i = 0;
     int no_okao_i = 0; 
@@ -293,6 +285,7 @@ public:
 				     rb_out, FONT_HERSHEY_SIMPLEX, 2.5, 
 				     green, 2, CV_AA);
 			
+			/*
 			ros::ServiceClient client = nh_.serviceClient<
 			  okao_client::OkaoStack>("stack_add");
 			okao_client::OkaoStack stack;
@@ -312,7 +305,7 @@ public:
 			
 			if ( !client.call(stack) )
 			  cout << "service missing!" << endl;	
-			
+			*/
 		      }
 		    else
 		      {
@@ -373,12 +366,12 @@ private:
 
 int main(int argc, char** argv) 
 {
-  ros::init( argc, argv, "my_node" );
-  MyClass mc;
+  ros::init( argc, argv, "okao_client" );
+  OkaoClient OCObj;
  
   ros::spin();
   
-  return EXIT_SUCCESS;
+  return 0;
 }
 
 

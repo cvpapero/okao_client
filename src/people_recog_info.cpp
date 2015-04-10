@@ -59,14 +59,14 @@ private:
 
 public:
   RecogInfo() :
-    okao_sub( nh, "/humans/OkaoServer", 100 ),
-    okaoNot_sub( nh, "/humans/OkaoServerNot", 100 ), 
+    okao_sub( nh, "/humans/okao_server", 100 ),
+    okaoNot_sub( nh, "/humans/okao_server_not", 100 ), 
     sync( MySyncPolicy( 100 ), okao_sub, okaoNot_sub )
   {
     sync.registerCallback( boost::bind( &RecogInfo::callback, this, _1, _2 ) );
     
     recog_pub_ = 
-      nh.advertise<humans_msgs::Humans>("/humans/RecogInfo", 1);
+      nh.advertise<humans_msgs::Humans>("/humans/recog_info", 1);
   }
   ~RecogInfo()
   {
@@ -113,7 +113,7 @@ public:
     humans_msgs::Humans recog;
     vector<long> now_tracking_id;
 
-    int okao_num = okao->num;
+    int okao_num = okao->human.size();
     int okao_recog_num = 0;
 
     //okaoについての処理
@@ -156,12 +156,14 @@ public:
 		 << maxOkaoId <<", max hist: " << maxHist << ", magni: " << magni << endl;
 
 	    humans_msgs::Human h;
+	    h = okao->human[ p_i ];
+	    /*
 	    MsgToMsg::bodyAndFaceToMsg( 
 				       okao->human[p_i].body,
 				       okao->human[p_i].face, 
 				       &h
 					);
-	    
+	    */
 	    ros::Time t = okao->header.stamp;
 	    geometry_msgs::PointStamped h_point;
 	    h_point.point.x 
@@ -196,7 +198,7 @@ public:
       }
 
     //okaoNotについての処理
-    int okaoNot_num = okaoNot->num;
+    int okaoNot_num = okaoNot->human.size();
     int okaoNot_recog_num = 0;
     for( int p_i = 0; p_i < okaoNot_num; ++p_i)
       {

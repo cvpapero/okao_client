@@ -63,7 +63,7 @@ public:
   RIVision()
     : it_(nh_),
     image_sub_( it_, "/camera_link/image/color", 100 ),
-    humans_sub_( nh_, "/humans/RecogInfo", 100 ),
+    humans_sub_( nh_, "/humans/recog_info", 100 ),
     sync( MySyncPolicy( 10 ), image_sub_, humans_sub_ )
   {
     sync.registerCallback( boost::bind( &RIVision::imageCb, this, _1, _2 ) );

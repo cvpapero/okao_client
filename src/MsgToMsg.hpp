@@ -64,14 +64,21 @@ namespace MsgToMsg{
 
   void bodyToMsg( humans_msgs::Body src, humans_msgs::Human *dst )
   {
+    /*
     dst->body.tracking_id = src.tracking_id;
     dst->body.is_tracked = src.is_tracked;
     dst->body.left_hand_state = src.left_hand_state;
     dst->body.right_hand_state = src.right_hand_state;
     dst->body.joints.resize( JOINTS );
-    
+    */
+    dst->body  = src;
+
+    /*
     for( int i = 0; i < JOINTS; ++i )
       {
+	//dst->body.joints[i]
+	//  = src.joints[i];
+
 	dst->body.joints[i].joint_name 
 	  = src.joints[i].joint_name;
 	dst->body.joints[i].tracking_state 
@@ -94,8 +101,9 @@ namespace MsgToMsg{
 	  = src.joints[i].orientation.z;
 	dst->body.joints[i].orientation.w 
 	  = src.joints[i].orientation.w;
+	
       } 
-
+    */
   }
 
   void faceToMsg(humans_msgs::Face src, humans_msgs::Human *dst )

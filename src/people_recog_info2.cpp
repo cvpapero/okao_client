@@ -192,12 +192,14 @@ public:
 		 << maxOkaoId <<", max hist: " << maxHist << ", magni: " << magni << endl;
 
 	    humans_msgs::Human h;
+	    h = okao->human[ p_i ];
+	    /*
 	    MsgToMsg::bodyAndFaceToMsg( 
 				       okao->human[p_i].body,
 				       okao->human[p_i].face, 
 				       &h
 					);
-	    
+	    */
 	    ros::Time t = okao->header.stamp;
 	    geometry_msgs::PointStamped h_point;
 	    h_point.point.x 
@@ -274,11 +276,13 @@ public:
 		humans_msgs::Human h;
 
 		humans_msgs::Body b;
+		/*
 		MsgToMsg::bodyToBody(
 				     okaoNot->human[p_i].body,
 				     &b
 				     );
-		h.body = b;
+		*/
+		h.body = okaoNot->human[p_i].body;
 		h.d_id = d_id;
 		h.max_okao_id =  maxOkaoId;
 		h.max_hist = maxHist;

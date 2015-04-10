@@ -77,7 +77,7 @@ public:
   PeoplePositionServer()
   {
     rein_sub_ 
-      = n.subscribe("/humans/RecogInfo", 1, 
+      = n.subscribe("/humans/recog_info", 1, 
 		    &PeoplePositionServer::callback, this);
     face_now_pub_
       = n.advertise<humans_msgs::PersonPoseImgArray
@@ -122,7 +122,7 @@ public:
     //まず、ファイルは以下のような形式にする
     //okao_id,name,hist,x,y,z 
     //okao_idをみて、人物の位置をo_DBHumanに詰め込んでいく   
-    std::ifstream ifs("/home/yhirai/catkin_ws/src/okao_client/src/people/peopledata.txt");
+    std::ifstream ifs("/home/uema/catkin_ws/src/okao_client/src/people/peopledata.txt");
     if(ifs.fail())
       {  // if(!fin)でもよい。
 	cout << "file not open" << endl;
@@ -166,7 +166,7 @@ public:
 	++it_o; 
       }
 
-    std::ofstream ofs("/home/yhirai/catkin_ws/src/okao_client/src/people/peopledata_d.txt");
+    std::ofstream ofs("/home/uema/catkin_ws/src/okao_client/src/people/peopledata_d.txt");
 
     if(ofs.fail())
       {  // if(!fout)でもよい。

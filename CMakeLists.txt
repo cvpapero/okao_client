@@ -182,11 +182,11 @@ find_library(ZMQ_LIBRARIE
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(OkaoClient src/OkaoClient.cpp)
-target_link_libraries(OkaoClient ${catkin_LIBRARIES} ${OpenCV_LIBS} ${ZMQ_LIBRARIE} msgpack)
+add_executable(okao_client src/okao_client.cpp)
+target_link_libraries(okao_client ${catkin_LIBRARIES} ${OpenCV_LIBS} ${ZMQ_LIBRARIE} msgpack)
 
-add_executable(OkaoClientTest src/OkaoClientTest.cpp)
-target_link_libraries(OkaoClientTest ${catkin_LIBRARIES} ${OpenCV_LIBS} ${ZMQ_LIBRARIE} msgpack)
+#add_executable(OkaoClientTest src/OkaoClientTest.cpp)
+#target_link_libraries(OkaoClientTest ${catkin_LIBRARIES} ${OpenCV_LIBS} ${ZMQ_LIBRARIE} msgpack)
 
 add_executable(okao_stack src/okao_stack.cpp)
 target_link_libraries(okao_stack ${catkin_LIBRARIES})
@@ -194,8 +194,8 @@ target_link_libraries(okao_stack ${catkin_LIBRARIES})
 #add_executable(people_recog_info3_1 src/people_recog_info3_1.cpp)
 #target_link_libraries(people_recog_info3_1 ${catkin_LIBRARIES})
 
-add_executable(people_recog_info src/people_recog_info.cpp)
-target_link_libraries(people_recog_info ${catkin_LIBRARIES})
+add_executable(people_recog_info2 src/people_recog_info2.cpp)
+target_link_libraries(people_recog_info2 ${catkin_LIBRARIES})
 
 add_executable(people_position_server src/people_position_server.cpp)
 target_link_libraries(people_position_server ${catkin_LIBRARIES})
