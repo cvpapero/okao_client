@@ -152,22 +152,11 @@ public:
 	    //メッセージ内にある一つの人物において、一位から三位までの個人情報を取得する。
 	    for(int i = 0; i < OKAO; ++i)
 	      {
-		//	humans_msgs::Person ps;
 
 		o_id[i] 
 		  = okao->human[p_i].face.persons[i].okao_id;
 		o_conf[i] 
 		  = okao->human[p_i].face.persons[i].conf;
-		/*
-		ps.okao_id = okao->human[p_i].face.persons[i].okao_id;
-		ps.hist = okao->human[p_i].face.persons[i].hist;
-		ps.conf = okao->human[p_i].face.persons[i].conf;
-		ps.name = okao->human[p_i].face.persons[i].name;
-		ps.laboratory = okao->human[p_i].face.persons[i].labolatory;
-		ps.grade = okao->human[p_i].face.persons[i].grade;
-
-		fc.persons.push_back( ps );
-		*/
 	      }
 
 	    //personの保持
@@ -193,13 +182,7 @@ public:
 
 	    humans_msgs::Human h;
 	    h = okao->human[ p_i ];
-	    /*
-	    MsgToMsg::bodyAndFaceToMsg( 
-				       okao->human[p_i].body,
-				       okao->human[p_i].face, 
-				       &h
-					);
-	    */
+
 	    ros::Time t = okao->header.stamp;
 	    geometry_msgs::PointStamped h_point;
 	    h_point.point.x 
@@ -213,12 +196,6 @@ public:
 	    h_point.header.frame_id 
 	      = okao->header.frame_id;
 
-	    //geometry_msgs::PointStamped pst;
-	    //pst.header.stamp = t;
-	    //pst.header.frame_id = "map";
-	    //std::string camera_frame = okao->header.frame_id;
-	    //MsgToMsg::transformHead( h_point, &pst );
-
 	    h.d_id = d_id;
 	    h.max_okao_id = maxOkaoId;
 	    h.max_hist = maxHist;
@@ -227,8 +204,7 @@ public:
 	    h.header.frame_id = okao->header.frame_id;
 	    h.p = h_point.point;
 	    recog.human.push_back( h );
-	    
-	    //name? conf? lab? grade?
+
 	    ++okao_recog_num;
 	  }
       }
@@ -276,12 +252,6 @@ public:
 		humans_msgs::Human h;
 
 		humans_msgs::Body b;
-		/*
-		MsgToMsg::bodyToBody(
-				     okaoNot->human[p_i].body,
-				     &b
-				     );
-		*/
 		h.body = okaoNot->human[p_i].body;
 		h.d_id = d_id;
 		h.max_okao_id =  maxOkaoId;

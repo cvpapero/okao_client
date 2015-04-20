@@ -121,14 +121,16 @@ public:
 
 
   //人物の認識についての処理
-  void personRecogProcess(long long tracking_id, int *okao_id, int hist, double magni)
+  void personRecogProcess(long long tracking_id, int *okao_id, 
+			  int hist, double magni)
   {
     if( id_bind_magni[ tracking_id ][ *okao_id ] < magni )
       id_bind_magni[ tracking_id ][ *okao_id ] = magni;
-
+    
     //もし閾値より小さいなら,unknown処理
-if( (id_bind_magni[ tracking_id ][ *okao_id ] < THRESHOLD) && (hist < HIST_THRESHOLD) )
-  {
+    if( (id_bind_magni[ tracking_id ][ *okao_id ] < THRESHOLD) 
+	|| (hist < HIST_THRESHOLD) )
+      {
 	*okao_id = 0;
       }  
   }
