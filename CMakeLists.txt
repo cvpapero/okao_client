@@ -197,8 +197,17 @@ target_link_libraries(okao_stack ${catkin_LIBRARIES})
 #add_executable(people_recog_info3_1 src/people_recog_info3_1.cpp)
 #target_link_libraries(people_recog_info3_1 ${catkin_LIBRARIES})
 
+add_executable(people_recog_info2_1test src/people_recog_info2_1test.cpp)
+target_link_libraries(people_recog_info2_1test ${catkin_LIBRARIES})
+
+add_executable(people_recog_info4_1 src/people_recog_info4_1.cpp)
+target_link_libraries(people_recog_info4_1 ${catkin_LIBRARIES})
+
 add_executable(people_recog_info3 src/people_recog_info3.cpp)
 target_link_libraries(people_recog_info3 ${catkin_LIBRARIES})
+
+#add_executable(people_recog_info3_1 src/people_recog_info3_1.cpp)
+#target_link_libraries(people_recog_info3_1 ${catkin_LIBRARIES})
 
 add_executable(people_position_server src/people_position_server.cpp)
 target_link_libraries(people_position_server ${catkin_LIBRARIES})

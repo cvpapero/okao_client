@@ -1,24 +1,4 @@
 /*
-2015.4.23------------------------------
-つーか倍率magniはいらない
-いるのは、人物IDの一位と二位の関係
-
-リクエストがあったら、その人物の順位を記録する。
-そして、ファイル出力する。
-
-もしその順位記録ファイルがあったら、それを参考にして人物認識をする
-もしなければ、別にそれは使わないでいいと思う
-
-でもいまは、そういう学習機能はいらないかな。
-ファイルに順位を書き出しておくぐらいで。
-そのファイルを自動作成できるようにするのは、また後でやる。
-
-
-あと、このモジュールも複数起動させられるようにしておくべきか？
-だとしたらd_idを文字列にするか、あるいはそもそも廃止するか
-今後の展開によって考える
-
-
 2015.4.18-------------------------------
 とりあえずUnknown処理
 どういうアルゴリズムで？
@@ -47,14 +27,13 @@ persons[0]の内部を埋めたい
 #include <map>
 #include <algorithm>
 #include <functional>
-#include <fstream>
 
 #include <humans_msgs/Humans.h>
 #include "MsgToMsg.hpp"
 
 using namespace std;
 
-#define OKAO_MAX 20
+#define OKAO_MAX 30
 #define OKAO 3
 #define BODY_MAX 6
 #define HEAD 3
@@ -73,13 +52,10 @@ private:
   ros::Publisher path_pub_;
 
   map<long, int> tracking_id_buf;
-  //map<int, map<int, int> > hist;
-  map<int, map<int, double> > hist;
+  map<int, map<int, int> > hist;
   map<int, humans_msgs::Person> prop_buf;
   map<long long, map<int, double> > id_bind_magni;
   map<long long, int> id_num;
-
-  stringstream file_name;
 
   typedef message_filters::Subscriber< 
     humans_msgs::Humans > HumansSubscriber; 
@@ -110,14 +86,6 @@ public:
     unknown.grade = "Unknown";
     prop_buf[ 0 ] = unknown;
 
-    //ファイル名
-    time_t now = time(NULL);
-    struct tm *pnow = localtime(&now);
-    file_name <<"/home/uema/histdata/" 
-	      << pnow->tm_year+1900<< "-"<< pnow->tm_mon<< "-" 
-	      << pnow->tm_mday<< "_" <<pnow->tm_hour<<"-"
-	      << pnow->tm_min<< "-" << pnow->tm_sec<<".txt"; 
-
   }
   ~RecogInfo()
   {
@@ -128,24 +96,23 @@ public:
   }
 
   void histogram(int d_id, int *o_id, int *o_conf, int *maxOkaoId, 
-		 double *maxHist, double *magni, long long tracking_id)
+		 int *maxHist, double *magni, long long tracking_id)
   {
     id_num[tracking_id] = id_num[tracking_id] + 1;
 
     for(int i = 0; i < OKAO; ++i)
       {
 	hist[d_id][o_id[i]] 
-	  = hist[d_id][o_id[i]] + (double)o_conf[i]/100.;
+	  = hist[d_id][o_id[i]] + o_conf[i]/100;
       }
  
     //最大値のヒストグラムとそのOKAO_IDを出力
-    vector<double> hist_pool, hist_file;
+    vector<int> hist_pool;
     map<int,int> hist_to_okao;
 
     for(int i = 0; i < OKAO_MAX; ++i)
       {
 	hist_pool.push_back( hist[d_id][i] );
-	hist_file.push_back( hist[d_id][i] );
 	hist_to_okao[hist[d_id][i]] = i;
       }
 
@@ -157,47 +124,12 @@ public:
     *maxOkaoId = hist_to_okao[hist_pool[0]];
     *maxHist = hist_pool[0];
     *magni = (double)hist_pool[0]/(double)hist_pool[1];
-
-    //アウトプット用関数
-    //histOutputFile(hist_file, *maxOkaoId);
-
   }
 
-  //ファイル出力
-  void histOutputFile(vector<double> hist_file, int okao_id)
-  {
-    //ファイル名
-    time_t now = time(NULL);
-    struct tm *pnow = localtime(&now);
-
-    stringstream tag, hist_line;
-
-    tag <<"[okao_id:" << okao_id << " time:"  <<pnow->tm_hour<<"-"
-	<< pnow->tm_min<< "-" << pnow->tm_sec << "], "; 
-
-    hist_line << tag.str();
-
-    ofstream ofs( file_name.str().c_str(), ios::out | ios::app );
-
-    for(int i = 0; i<hist_file.size(); ++i)
-      {
-	//cout <<"hist_pool[" << i << "] = " << hist_pool[ i ] <<endl;
-	if(hist_file[i] >= 0 && hist_file[i] < 10 )
-	  hist_line << "    " << fixed << setprecision(2) << hist_file[ i ] << ",";
-	else if(hist_file[i] >= 10 && hist_file[i] < 100 )
-	  hist_line << "   " << fixed << setprecision(2) << hist_file[ i ] << ",";
-	else if(hist_file[i] >= 100 && hist_file[i] < 1000 )
-	  hist_line << " " << fixed << setprecision(2) << hist_file[ i ] << ",";
-	else 
-	  hist_line << "" << fixed << setprecision(2) << hist_file[ i ] << ",";
-      }
-    //hist_line << endl ;
-    ofs << hist_line.str() << endl;
-  }
 
   //人物の認識についての処理
   void personRecogProcess(long long tracking_id, int *okao_id, 
-			  double hist, double magni)
+			  int hist, double magni)
   {
     if( id_bind_magni[ tracking_id ][ *okao_id ] < magni )
       id_bind_magni[ tracking_id ][ *okao_id ] = magni;
@@ -257,10 +189,9 @@ public:
 
 	prop_buf[ ps.okao_id ] = ps;
 	
-	int maxOkaoId = 0;
-	double maxHist = 0.0, magni = 0.0;
-	histogram( (d_id) , o_id, o_conf, &maxOkaoId, 
-		   &maxHist, &magni, tracking_id );
+	int maxOkaoId = 0, maxHist = 0;
+	double magni = 0.0;
+	histogram( (d_id) , o_id, o_conf, &maxOkaoId, &maxHist, &magni, tracking_id );
 	personRecogProcess( tracking_id, &maxOkaoId, maxHist,  magni );
 
 	cout <<"face found[ " << ros::Time::now() 
@@ -308,8 +239,8 @@ public:
 	    
 	    //人物情報の取得
 	    int o_id[OKAO] = {0}, o_conf[OKAO] = {0};
-	    int maxOkaoId = 0;
-	    double maxHist = 0, magni = 0.0;
+	    int maxOkaoId = 0, maxHist = 0;
+	    double magni = 0.0;
 	    histogram( (d_id) , o_id, o_conf, &maxOkaoId, &maxHist, &magni, tracking_id );
 	    personRecogProcess( tracking_id, &maxOkaoId, maxHist, magni );
 	    cout <<"face not found[ " << ros::Time::now() 

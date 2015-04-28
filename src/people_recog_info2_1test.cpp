@@ -22,7 +22,7 @@
 
 using namespace std;
 
-#define OKAO_MAX 14
+#define OKAO_MAX 15
 #define OKAO 3
 #define BODY_MAX 6
 #define HEAD 3
@@ -49,7 +49,7 @@ private:
   //ファイル出力
   stringstream name;
   
-  //ros::Time start;
+  ros::Time start;
 
   typedef message_filters::Subscriber< 
     humans_msgs::Humans > HumansSubscriber; 
@@ -64,22 +64,22 @@ private:
 
 public:
   RecogInfo() :
-    okao_sub( nh, "/humans/OkaoServer", 100 ),
-    okaoNot_sub( nh, "/humans/OkaoServerNot", 100 ), 
+    okao_sub( nh, "/humans/okao_server", 100 ),
+    okaoNot_sub( nh, "/humans/okao_server_not", 100 ), 
     sync( MySyncPolicy( 100 ), okao_sub, okaoNot_sub )
   {
     //ファイル名
     time_t now = time(NULL);
     struct tm *pnow = localtime(&now);
-    name <<"/home/yhirai/histdata/" 
-	 <<toString( pnow->tm_year+1900 ) << toString(pnow->tm_mon) 
-	 << toString(pnow->tm_mday)<< toString(pnow->tm_hour)
-	 << toString(pnow->tm_min) << toString(pnow->tm_sec); 
+    name <<"/home/uema/histdata/" 
+	 << pnow->tm_year+1900  << pnow->tm_mon 
+	 << pnow->tm_mday<< pnow->tm_hour
+	 << pnow->tm_min << pnow->tm_sec; 
     sync.registerCallback( boost::bind( &RecogInfo::callback, this, _1, _2 ) );
     frame = 0;    
     start = ros::Time::now();
     recog_pub_ = 
-      nh.advertise<humans_msgs::Humans>("/humans/RecogInfo", 1);
+      nh.advertise<humans_msgs::Humans>("/humans/recog_info", 1);
   }
   ~RecogInfo()
   {
@@ -100,7 +100,7 @@ public:
     stringstream ss, framess, didss;
 
     //最大値のヒストグラムとそのOKAO_IDを出力
-    for(int i = 0; i < OKAO_MAX; ++i)
+    for(int i = 1; i <= OKAO_MAX; ++i)
       {
 	if(hist[d_id][i] > hist[d_id][*maxOkaoId])
 	  {
@@ -122,7 +122,8 @@ public:
     didss << toString( d_id ); 
     std::ofstream ofs( name.str().c_str(), std::ios::out | std::ios::app );
     ofs <<"d_id: " << didss.str() << ", frame: "  << framess.str() 
-	<< ", time: " << tuString( ros::Time::now - start ) //toString(pnow_f->tm_min) << ":" << toString(pnow_f->tm_sec)
+	<< ", time: " //<< toString( ros::Time::now() - start )
+	<< pnow_f->tm_hour << ":"<< pnow_f->tm_min << ":" << pnow_f->tm_sec
 	<< endl << ss.str() << endl;
     ++frame;
   }

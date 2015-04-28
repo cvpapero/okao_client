@@ -1,24 +1,4 @@
 /*
-2015.4.23------------------------------
-つーか倍率magniはいらない
-いるのは、人物IDの一位と二位の関係
-
-リクエストがあったら、その人物の順位を記録する。
-そして、ファイル出力する。
-
-もしその順位記録ファイルがあったら、それを参考にして人物認識をする
-もしなければ、別にそれは使わないでいいと思う
-
-でもいまは、そういう学習機能はいらないかな。
-ファイルに順位を書き出しておくぐらいで。
-そのファイルを自動作成できるようにするのは、また後でやる。
-
-
-あと、このモジュールも複数起動させられるようにしておくべきか？
-だとしたらd_idを文字列にするか、あるいはそもそも廃止するか
-今後の展開によって考える
-
-
 2015.4.18-------------------------------
 とりあえずUnknown処理
 どういうアルゴリズムで？
@@ -54,7 +34,7 @@ persons[0]の内部を埋めたい
 
 using namespace std;
 
-#define OKAO_MAX 20
+#define OKAO_MAX 16
 #define OKAO 3
 #define BODY_MAX 6
 #define HEAD 3
@@ -159,7 +139,7 @@ public:
     *magni = (double)hist_pool[0]/(double)hist_pool[1];
 
     //アウトプット用関数
-    //histOutputFile(hist_file, *maxOkaoId);
+    histOutputFile(hist_file, *maxOkaoId);
 
   }
 
@@ -184,12 +164,12 @@ public:
 	//cout <<"hist_pool[" << i << "] = " << hist_pool[ i ] <<endl;
 	if(hist_file[i] >= 0 && hist_file[i] < 10 )
 	  hist_line << "    " << fixed << setprecision(2) << hist_file[ i ] << ",";
-	else if(hist_file[i] >= 10 && hist_file[i] < 100 )
-	  hist_line << "   " << fixed << setprecision(2) << hist_file[ i ] << ",";
-	else if(hist_file[i] >= 100 && hist_file[i] < 1000 )
-	  hist_line << " " << fixed << setprecision(2) << hist_file[ i ] << ",";
+	else if(hist_pool[i] >= 10 && hist_pool[i] < 100 )
+	  hist_line << "   " << fixed << setprecision(2) << hist_pool[ i ] << ",";
+	else if(hist_pool[i] >= 100 && hist_pool[i] < 1000 )
+	  hist_line << " " << fixed << setprecision(2) << hist_pool[ i ] << ",";
 	else 
-	  hist_line << "" << fixed << setprecision(2) << hist_file[ i ] << ",";
+	  hist_line << "" << fixed << setprecision(2) << hist_pool[ i ] << ",";
       }
     //hist_line << endl ;
     ofs << hist_line.str() << endl;

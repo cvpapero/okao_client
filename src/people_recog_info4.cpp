@@ -103,12 +103,19 @@ public:
     recog_pub_ = 
       nh.advertise<humans_msgs::Humans>("/humans/recog_info", 1);
 
+    //unknownの場合
     humans_msgs::Person unknown;
     unknown.okao_id = 0;
     unknown.name = "Unknown";
     unknown.laboratory = "Unknown";
     unknown.grade = "Unknown";
     prop_buf[ 0 ] = unknown;
+
+    //決定できない場合
+    humans_msgs::Person undetermined;
+    unknown.name = "Undetermined";
+    unknown.laboratory = "Undetermined";
+    unknown.grade = "Undetermined";
 
     //ファイル名
     time_t now = time(NULL);
@@ -197,24 +204,25 @@ public:
 
   //人物の認識についての処理
   void personRecogProcess(long long tracking_id, int *okao_id, 
-			  double hist, double magni)
+			  double hist, map<long long, int> id_num)
   {
     if( id_bind_magni[ tracking_id ][ *okao_id ] < magni )
       id_bind_magni[ tracking_id ][ *okao_id ] = magni;
     
     //もし閾値より小さいなら,unknown処理
-    /*
     if( (id_bind_magni[ tracking_id ][ *okao_id ] < THRESHOLD) 
 	|| (id_num[ tracking_id ] < NUM_THRESHOLD) )
       {
 	*okao_id = 0;
       }  
-    */
+    
+    /*
     if( (id_bind_magni[ tracking_id ][ *okao_id ] < THRESHOLD) 
 	|| (hist < HIST_THRESHOLD) )
       {
 	*okao_id = 0;
-      }  
+      }
+    */  
   }
 
 

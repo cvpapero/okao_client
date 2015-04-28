@@ -1,8 +1,16 @@
 /*
-ヒストグラムの出力
+2015.3.5--------------------------------
+一位と二位の投票数を使って
+人物信頼度の比を求める
 
+信頼度投票指標 = 一位の投票数/二位の投票数
 
+信頼度投票指標が2以上なら、確定
 
+それから、マルチスレッドでokao Not とokaoを動かす
+
+しかし、マルチスレッドにするなら、どこでその二つの情報を統合するか？
+すべてのトラッキングする人物において
 */
 
 #include <ros/ros.h>
@@ -15,24 +23,19 @@
 #include <vector>
 #include <map>
 #include <algorithm>
-#include <fstream>
+#include <functional>
 
 #include <humans_msgs/Humans.h>
 #include "MsgToMsg.hpp"
 
 using namespace std;
 
-#define OKAO_MAX 14
+#define OKAO_MAX 30
 #define OKAO 3
 #define BODY_MAX 6
 #define HEAD 3
 
 int d_id = 0;
-//long long now_tracking_id[BODY_MAX] = {0};
-template<class T> inline std::string toString(T x) {std::ostringstream sout;sout<<x;return sout.str();}
-
-
-
 
 class RecogInfo
 {
@@ -40,96 +43,65 @@ private:
   ros::NodeHandle nh;
   ros::Publisher recog_pub_;
   ros::Publisher path_pub_;
-  //  ros::Subscriber okao_sub_;
+  ros::Subscriber okao_sub;
+  ros::Subscriber okaoNot_sub;
 
   map<long, int> tracking_id_buf;
   map<int, map<int, int> > hist;
   //vector<long> now_tracking_id;
-  int frame;
-  //ファイル出力
-  stringstream name;
   
-  ros::Time start;
-
-  typedef message_filters::Subscriber< 
-    humans_msgs::Humans > HumansSubscriber; 
-
-  HumansSubscriber okao_sub, okaoNot_sub;
-
-  typedef message_filters::sync_policies::ApproximateTime<
-    humans_msgs::Humans, humans_msgs::Humans
-    > MySyncPolicy;
-
-  message_filters::Synchronizer< MySyncPolicy > sync;
 
 public:
-  RecogInfo() :
-    okao_sub( nh, "/humans/OkaoServer", 100 ),
-    okaoNot_sub( nh, "/humans/OkaoServerNot", 100 ), 
-    sync( MySyncPolicy( 100 ), okao_sub, okaoNot_sub )
+  RecogInfo() 
   {
-    //ファイル名
-    time_t now = time(NULL);
-    struct tm *pnow = localtime(&now);
-    name <<"/home/yhirai/histdata/" 
-	 <<toString( pnow->tm_year+1900 ) << toString(pnow->tm_mon) 
-	 << toString(pnow->tm_mday)<< toString(pnow->tm_hour)
-	 << toString(pnow->tm_min) << toString(pnow->tm_sec); 
-    sync.registerCallback( boost::bind( &RecogInfo::callback, this, _1, _2 ) );
-    frame = 0;    
-    start = ros::Time::now();
+
+    okao_sub = nh.subscribe("/humans/OkaoServer", 1
+			    &RecogInfo::okaoCallback, this);
+    okaoNot_sub = nh.subscribe("/humans/OkaoServerNot", 1
+			       &RecogInfo::okaoNotCallback, this); 
+    
     recog_pub_ = 
       nh.advertise<humans_msgs::Humans>("/humans/RecogInfo", 1);
   }
   ~RecogInfo()
   {
-
     tracking_id_buf.clear();
     hist.clear();
   }
 
-  void histogram(int d_id, int *o_id, int *o_conf, int *maxOkaoId, int *maxHist)
+  void histogram(int d_id, int *o_id, int *o_conf, int *maxOkaoId, int *maxHist, double *magni)
   {
-
     for(int i = 0; i < OKAO; ++i)
       {
 	hist[d_id][o_id[i]] 
 	  = hist[d_id][o_id[i]] + o_conf[i]/100;
       }
-
-    stringstream ss, framess, didss;
-
+ 
     //最大値のヒストグラムとそのOKAO_IDを出力
+    //二位との比も出力したい
+  
+    vector<int> hist_pool;
+    map<int,int> hist_to_okao;
+
     for(int i = 0; i < OKAO_MAX; ++i)
       {
-	if(hist[d_id][i] > hist[d_id][*maxOkaoId])
-	  {
-	    *maxOkaoId = i;
-	    *maxHist = hist[ d_id ][ i ];
-	  }
-	
-	ss << toString(  i  ) 
-	   <<", " << toString( hist[d_id][i] )<<endl;; 
-	  //<<", per: "<< toString( (double)member[ i ]/ALLCOUNT ) << endl;
-	//name << "okao_cost_" << toString( ros::Time::now() ) <<".txt" ;
-	//string namestr = name.str();
-
+	hist_pool.push_back( hist[d_id][i] );
+	hist_to_okao[hist[d_id][i]] = i;
       }
-    time_t now_f = time(NULL);
-    struct tm *pnow_f = localtime(&now_f);
 
-    framess << toString( frame );
-    didss << toString( d_id ); 
-    std::ofstream ofs( name.str().c_str(), std::ios::out | std::ios::app );
-    ofs <<"d_id: " << didss.str() << ", frame: "  << framess.str() 
-	<< ", time: " << tuString( ros::Time::now - start ) //toString(pnow_f->tm_min) << ":" << toString(pnow_f->tm_sec)
-	<< endl << ss.str() << endl;
-    ++frame;
+    //投票結果のソート
+    sort( hist_pool.begin(), hist_pool.end(), 
+	  greater<int>() );
+
+    //cout << "secondHist: "<<hist_pool[1]<<endl;
+    //一位と二位の倍率を出力
+    *maxOkaoId = hist_to_okao[hist_pool[0]];
+    *maxHist = hist_pool[0];
+    *magni = (double)hist_pool[0]/(double)hist_pool[1];
   }
 
-  void callback(
-		const humans_msgs::HumansConstPtr& okao,
-		const humans_msgs::HumansConstPtr& okaoNot
+  void okaoCallback(
+		const humans_msgs::HumansConstPtr& okao
 		)
   {
     humans_msgs::Humans recog;
@@ -169,12 +141,13 @@ public:
 		  = okao->human[p_i].face.persons[i].conf;
 	      }
 	    int maxOkaoId = 0, maxHist = 0;
-	    histogram( (d_id) , o_id, o_conf, &maxOkaoId, &maxHist );
+	    double magni = 0.0;
+	    histogram( (d_id) , o_id, o_conf, &maxOkaoId, &maxHist, &magni );
 
 	    cout <<"face found[ " << ros::Time::now() 
 		 << " ], d_id: "<<d_id << ", tracking_id: "
 		 << tracking_id << " ---> max id: "
-		 << maxOkaoId <<", max hist: " << maxHist << endl;
+		 << maxOkaoId <<", max hist: " << maxHist << ", magni: " << magni << endl;
 
 	    humans_msgs::Human h;
 	    MsgToMsg::bodyAndFaceToMsg( 
@@ -196,15 +169,10 @@ public:
 	    h_point.header.frame_id 
 	      = okao->header.frame_id;
 
-	    //geometry_msgs::PointStamped pst;
-	    //pst.header.stamp = t;
-	    //pst.header.frame_id = "map";
-	    //std::string camera_frame = okao->header.frame_id;
-	    //MsgToMsg::transformHead( h_point, &pst );
-
 	    h.d_id = d_id;
 	    h.max_okao_id = maxOkaoId;
 	    h.max_hist = maxHist;
+	    h.magni = magni;
 	    h.header.stamp = t;
 	    h.header.frame_id = okao->header.frame_id;
 	    h.p = h_point.point;
@@ -214,7 +182,12 @@ public:
 	    ++okao_recog_num;
 	  }
       }
+  }
 
+  void okaoCallback(		
+		    const humans_msgs::HumansConstPtr& okaoNot
+				)
+  {
     //okaoNotについての処理
     int okaoNot_num = okaoNot->num;
     int okaoNot_recog_num = 0;
@@ -233,12 +206,13 @@ public:
 		//人物情報の取得
 		int o_id[OKAO] = {0}, o_conf[OKAO] = {0};
 		int maxOkaoId = 0, maxHist = 0;
-		histogram( (d_id) , o_id, o_conf, &maxOkaoId, &maxHist );
+		double magni = 0.0;
+		histogram( (d_id) , o_id, o_conf, &maxOkaoId, &maxHist, &magni );
 
 		cout <<"face not found[ " << ros::Time::now() 
 		     << " ], d_id: "<<d_id << ", tracking_id: "
 		     << tracking_id << " ---> max id: "
-		     << maxOkaoId <<", max hist: " << maxHist << endl;
+		     << maxOkaoId <<", max hist: " << maxHist << ", magni: " << magni << endl;
 
 		//人物位置の更新
 		ros::Time t = okaoNot->header.stamp;
@@ -253,14 +227,7 @@ public:
 		  = t;
 		h_point.header.frame_id 
 		  = okaoNot->header.frame_id;
-		
-		//geometry_msgs::PointStamped pst;
-		//pst.header.stamp = t;
-		//pst.header.frame_id = "map";
-		//pst.header.frame_id = okaoNot->header.frame_id;
-		//std::string camera_frame = okao->header.frame_id;
-		//MsgToMsg::transformHead( h_point, &pst );
-
+	    
 		humans_msgs::Human h;
 
 		humans_msgs::Body b;
@@ -272,6 +239,7 @@ public:
 		h.d_id = d_id;
 		h.max_okao_id =  maxOkaoId;
 		h.max_hist = maxHist;
+		h.magni = magni;
 		//h.p = pst.point;
 		h.header.stamp = t;
 		h.header.frame_id = okaoNot->header.frame_id;
@@ -306,8 +274,8 @@ public:
       {
 	//見ていないtracking_idのリクエスト
 	/*
-tracking_id_buf.erase(lost_tracking_id);
-hist.erase(lost_d_id);
+	  tracking_id_buf.erase(lost_tracking_id);
+	  hist.erase(lost_d_id);
 	 */
       }
 
@@ -322,6 +290,7 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "people_recog_info");
   RecogInfo RIObject;
-  ros::spin();
+  ros::MultiThreadedSpinner spinner(2); // Use 3 threads
+  spinner.spin();
   return 0;
 }
