@@ -43,7 +43,8 @@ d_idに基づいてパブリッシュ
 using namespace std;
 
 //d_idに基づくDB
-map<int, humans_msgs::Human> d_DBHuman;
+//map<int, humans_msgs::Human> d_DBHuman;
+map<long long, humans_msgs::Human> d_DBHuman;
 //map<int, humans_msgs::Human> p_DBHuman;
 
 //okao_idに基づくDB
@@ -195,11 +196,11 @@ public:
 	    ah.header.frame_id = "map";//重要
 	    ah.header.stamp = rein->header.stamp;
 	    transformPosition( rein->human[ i ] ,&ah );
-	    ah.magni = rein->human[ i ].magni;
+	    //ah.magni = rein->human[ i ].magni;
 	    //ah.header.stamp = ros::Time::now();
 	    //ah = rein->human[ i ];
 	    //n_DBHuman[ i ] = ah;
-	    d_DBHuman[ rein->human[ i ].d_id ] = ah;
+	    d_DBHuman[ rein->human[ i ].body.tracking_id ] = ah;
 	    o_DBHuman[ rein->human[ i ].max_okao_id ] = ah;
 
 	    ROS_INFO("people data update! okao_id: %d", rein->human[ i ].max_okao_id );
@@ -219,7 +220,7 @@ public:
     while( it_o != o_DBHuman.end() )
       {
 	humans_msgs::Human h_res;	
-	cout <<"name: "<< it_o->second.max_okao_id << " d_id:" << it_o->second.d_id<< endl; 
+	//cout <<"name: "<< it_o->second.max_okao_id << " d_id:" << it_o->second.d_id<< endl; 
 	++it_o; 
       }
 
@@ -234,7 +235,7 @@ public:
     //ROS_INFO("all human publisher");
     humans_msgs::PersonPoseImgArray ppia;
     //o_DBHuman内から、tracking_idをキーにして検索
-    map<int, humans_msgs::Human>::iterator it_d = d_DBHuman.begin();
+    map<long long, humans_msgs::Human>::iterator it_d = d_DBHuman.begin();
     while( it_d != d_DBHuman.end() )
       {
 	//	cout <<"name: "<< it_o->second.max_okao_id << " d_id:" << it_o->second.d_id<< endl; 
@@ -305,7 +306,7 @@ public:
     hdst->p = dst.point;
     hdst->header.stamp = t;
     hdst->header.frame_id = dst.header.frame_id;
-    hdst->d_id = hsrc.d_id;
+    hdst->state = hsrc.state;
     hdst->max_okao_id = hsrc.max_okao_id;
     hdst->max_hist = hsrc.max_hist;
 
