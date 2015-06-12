@@ -1,9 +1,8 @@
 <launch>
 
-	<include file="$(find kinectv2_client)/launch/all_kinect.launch" />
-	<!--node pkg="okao_client" type="okao_stack" respawn="false" name="okao_stack" /-->
+	<include file="$(find kinect_v2_client)/launch/kinect.launch" />
 	<node pkg="okao_client" type="people_recog_info" respawn="false" name="people_recog_info" output="screen" />
 	
-	<!-- node pkg="okao_client" type="people_position_server" respawn="false" name="people_position_server" output="screen" / -->
+	<node pkg="okao_client" type="recog_info_vision" respawn="false" name="recog_info_vision" output="screen" />
 
 </launch>

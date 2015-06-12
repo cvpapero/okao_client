@@ -192,12 +192,12 @@ add_executable(okao_client_image src/okao_client_image.cpp)
 target_link_libraries(okao_client_image ${catkin_LIBRARIES} ${OpenCV_LIBS} ${ZMQ_LIBRARIE} msgpack)
 
 #人物信頼度の投票による人物認識モジュール
-add_executable(people_recog_info src/people_recog_infocpp)
+add_executable(people_recog_info src/people_recog_info.cpp)
 target_link_libraries(people_recog_info ${catkin_LIBRARIES})
 
 #people_recog_infoモジュールの結果を利用した人物認識モジュール
-add_executable(recog_info_vision src/recog_info_vision.cpp)
-target_link_libraries(recog_info_vision ${catkin_LIBRARIES} ${OpenCV_LIBS})
+#add_executable(recog_info_vision src/recog_info_vision.cpp)
+#target_link_libraries(recog_info_vision ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
 
 #サブモジュール

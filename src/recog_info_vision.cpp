@@ -92,8 +92,8 @@ public:
       return;
     }
 
-    ros::ServiceClient okaoStack = nh_.serviceClient<okao_client::OkaoStack>("stack_send");
-    okao_client::OkaoStack stack;
+    //ros::ServiceClient okaoStack = nh_.serviceClient<okao_client::OkaoStack>("stack_send");
+    //okao_client::OkaoStack stack;
 
 
     // Draw an example circle on the video stream
@@ -135,12 +135,12 @@ public:
 		      color, 5, 8);
 
 	//stack.request.rule = "req";
-	stack.request.person.okao_id = okao_data->human[i].max_okao_id;
-	okaoStack.call(stack);	
+	//stack.request.person.okao_id = okao_data->human[i].max_okao_id;
+	//okaoStack.call(stack);	
 
 	std::stringstream idAndNameStream;
 	std::string idAndName;
-	idAndNameStream << stack.response.person.name ;//<< ","
+	idAndNameStream <<  okao_data->human[i].face.persons[0].name ;//<< ","
 	//<< okao_data->human[i].max_hist;
 	idAndName = idAndNameStream.str();	    
 	cout <<"recog[ "<<i<<" ]: " << idAndName << endl;

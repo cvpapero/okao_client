@@ -4,7 +4,7 @@ okaoとokaoNotは、やはり同じパブリッシュ先を持つべき
 
 2014.12.8-------------
 画像とjointを同期
-
+ 
  */
 
 //basic
@@ -263,7 +263,7 @@ public:
 		    humans_msgs::Face face_msg;
 		    humans_msgs::Body body_msg;
 		    bool p_ok = false;
-		    JsonToMsg::face(v, &face_msg, top.x, top.y, &p_ok);		    
+		    JsonToMsg::face(v, &face_msg, top.x, top.y, &p_ok, 0);		    
 		    MsgToMsg::bodyToBody(kinect->human[i].body, &body_msg);
 		    
 		    if( p_ok )

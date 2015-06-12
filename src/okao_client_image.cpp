@@ -24,6 +24,7 @@
 
 #include "picojson.h"
 #include "Message.h"
+#include "JsonToMsg.hpp"
 
 #define OKAO 3 
 #define SRVTEMPO 10
@@ -63,7 +64,7 @@ public:
     image_pub_ = it_.advertise("/image_converter/output_video",1);
 
     //検出した顔データのパブリッシュ
-    okaoData_pub_ = nh_.advertise<humans_msgs::Humans>("/humans/OkaoServer",10);
+    okaoData_pub_ = nh_.advertise<humans_msgs::Humans>("/humans/okao_server",10);
 
     //ソケットの作成
     responder = new zmq::socket_t(context, ZMQ_REQ);
@@ -159,137 +160,27 @@ public:
 	picojson::parse(v,json,json + strlen(json),&err);
 	if(err.empty())
 	  {
-	    int pos[4];
-	    int people_num = 0;
-	    //一番外側のオブジェクトを取得
-	    picojson::object& obj = v.get<picojson::object>();
-	    //facesの中身があるならば
-	    if( obj.find("error") != obj.end() && obj["error"].get<std::string>().empty())
+	    humans_msgs::Face face_msg;
+	    bool p_ok = false;
+	    JsonToMsg::face(v, &face_msg, 0, 0, &p_ok, 0);	
+
+	    if( p_ok )
 	      {
-		if( obj.find("faces") != obj.end() )
-		  {
-		    picojson::array array = obj["faces"].get<picojson::array>();
-		    int people_num = array.size();//人数	    		
-		    humans_msgs::Humans okao_msg;	   
-		    okao_msg.human.resize(people_num);
 
-		    for( int n = 0; n<people_num; ++n)
-		      okao_msg.human[n].face.persons.resize(3);
-
-		    okao_msg.num = people_num;//OkaoサーバとKinectサーバで認識した人数の違いをどうするか？
-		    //cout << "people_num:" <<people_num << endl;
-		    //検出した人数分ループ
-		    int num = 0;
-		    for(picojson::array::iterator it = array.begin(); it != array.end(); ++it,++num)
-		      {
-			picojson::object& person_obj = it->get<picojson::object>();
-			
-			//顔の位置のとりだし
-			picojson::array pos_array = person_obj["position"].get<picojson::array>();
-			for(int i = 0; i < 4; ++i)
-			  {
-			    pos[i] = (int)pos_array[i].get<double>();
-			  }
-
-			//人物ID,信頼度の取り出し
-			picojson::array id_array = person_obj["id"].get<picojson::array>();
-			picojson::array db_info_array = person_obj["db_info"].get<picojson::array>();
-			//picojson::array id1 = id_array[0].get<picojson::array>();
-			//double conf = (int)id1[1].get<double>();
-			double tmp_id[3], tmp_conf[3]; 
-			std::string tmp_name[3], tmp_grade[3], tmp_laboratory[3];
-			
-			++callbackCount; 
-			if( !(callbackCount % SRVTEMPO) )
-			  {
-			    stackSrv = true;
-			    callbackCount = 0;
-			  }
-			for(int n = 0; n < OKAO; ++n)
-			  {
-			    picojson::array id_array_array = id_array[n].get<picojson::array>();
-			    tmp_id[n] = (int)id_array_array[0].get<double>();
-			    tmp_conf[n] = (int)id_array_array[1].get<double>();
-			    picojson::object& db_info_obj = db_info_array[n].get<picojson::object>();
-			    tmp_name[n] = db_info_obj["name"].get<std::string>();
-			    tmp_grade[n] = db_info_obj["grade"].get<std::string>();
-			    tmp_laboratory[n] = db_info_obj["laboratory"].get<std::string>();
-
-			    //if(stackSrv){
-			      //srv
-			      //stackSrv = false;
-			      ros::ServiceClient client = nh_.serviceClient<okao_client::OkaoStack>("okao_stack");
-			      okao_client::OkaoStack stack;
-			      stack.request.rule = "add";
-			      stack.request.okao_id = tmp_id[n];
-			      stack.request.name = tmp_name[n];
-			      stack.request.laboratory = tmp_laboratory[n];
-			      stack.request.grade = tmp_grade[n];
-			      if ( client.call(stack) )
-				cout << "service success!" << endl;
-			      else
-				cout << "service missing!" << endl;
-			      //}		 
-			  }
-			
-			//一人目の信頼度を利用する
-			if(tmp_conf[0] < 200)
-			  {
-			    for(int n = 0; n < OKAO; ++n)
-			      {
-				tmp_id[n] = 0;
-				tmp_conf[n] = 0;
-				tmp_name[n] = "Unknown";
-				tmp_laboratory[n] = "Unknown";
-				tmp_grade[n] = "Unknown";
-			      }			    
-
-			  }
-
-			  
-			for(int n = 0; n < OKAO; ++n)
-			  {
-			    okao_msg.human[num].face.persons[n].okao_id = tmp_id[n];
-			    okao_msg.human[num].face.persons[n].conf = tmp_conf[n];
-			    okao_msg.human[num].face.persons[n].name = tmp_name[n];
-			    okao_msg.human[num].face.persons[n].laboratory = tmp_laboratory[n];
-			    okao_msg.human[num].face.persons[n].grade = tmp_grade[n];
-			  }
-			
-			//顔の部分を四角で囲む
-			cv::Point lt(pos[0],pos[1]);
-			cv::Point rt(pos[2],pos[1]);
-			cv::Point lb(pos[0],pos[3]);
-			cv::Point rb(pos[2],pos[3]);
-			cv::Scalar color(0, 0, 255);
-			cv::line(rgbImage, lt , rt , color, 2);
-			cv::line(rgbImage, rt , rb , color, 2);
-			cv::line(rgbImage, rb , lb , color, 2);
-			cv::line(rgbImage, lb , lt , color, 2);
-			//名前の表示
-			cv::putText(rgbImage,tmp_name[0],rb,FONT_HERSHEY_SIMPLEX,2.5,color,2,CV_AA);
-			
-
-			okao_msg.human[num].face.position.lt.x = pos[0]*resize_width;
-			okao_msg.human[num].face.position.lt.y = pos[1]*resize_height;
-			okao_msg.human[num].face.position.rt.x = pos[2]*resize_width;
-			okao_msg.human[num].face.position.rt.y = pos[1]*resize_height;
-			okao_msg.human[num].face.position.lb.x = pos[0]*resize_width;
-			okao_msg.human[num].face.position.lb.y = pos[3]*resize_height;
-			okao_msg.human[num].face.position.rb.x = pos[2]*resize_width;
-			okao_msg.human[num].face.position.rb.y = pos[3]*resize_height;
-
-		      }
-		    cv::imshow(OPENCV_WINDOW, rgbImage);
-		    
-		    cv::waitKey(1);
-		    //パブリッシュ
-		    okao_msg.header.stamp = ros::Time::now();
-		    okao_msg.header.frame_id = "okao";
-		    okaoData_pub_.publish(okao_msg);
-		    
-		  }	
+		cv::Point lt(face_msg.position.lt.x, face_msg.position.lt.y);
+		cv::Point rb(face_msg.position.rb.x, face_msg.position.rb.y);
+		//cv::Point rb_out = bottom;
+		cv::Scalar red(0,0,200);
+		cv::Scalar green(0,200,0);
+		cv::rectangle( rgbImage, lt, rb, red, 5, 8);
+		
+		cv::putText( rgbImage, face_msg.persons[0].name, 
+			     rb, FONT_HERSHEY_SIMPLEX, 2.5, 
+			     green, 2, CV_AA);
 	      }
+	    cv::imshow(OPENCV_WINDOW, rgbImage);
+	    
+	    cv::waitKey(1);
 	  }
       }   
     catch(const zmq::error_t& e)
