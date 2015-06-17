@@ -140,7 +140,12 @@ public:
 
 	std::stringstream idAndNameStream;
 	std::string idAndName;
-	idAndNameStream <<  okao_data->human[i].face.persons[0].name ;//<< ","
+	if(okao_data->human[i].state == 2)
+	  idAndNameStream <<  okao_data->human[i].face.persons[0].name ;//<< ","
+	else if(okao_data->human[i].state == 0)
+	  idAndNameStream << "Undetermined";
+	else 
+	  idAndNameStream << "Unknown";
 	//<< okao_data->human[i].max_hist;
 	idAndName = idAndNameStream.str();	    
 	cout <<"recog[ "<<i<<" ]: " << idAndName << endl;

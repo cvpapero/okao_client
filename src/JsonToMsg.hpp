@@ -72,6 +72,19 @@ namespace JsonToMsg{
 		    gaze_direction.push_back((int)g_d_it->get<double>());
 		  }
 		
+		picojson::array points_array = 
+		  person_obj["points"].get<picojson::array>();
+		for(picojson::array::iterator ps_it = points_array.begin();
+		    ps_it != points_array.end(); ++ps_it) 
+		  {
+		    humans_msgs::XYConf face_point;
+		    picojson::array fp_array = ps_it->get<picojson::array>();
+		    face_point.x = (int)fp_array[0].get<double>();
+		    face_point.y = (int)fp_array[1].get<double>();
+		    face_point.conf = (int)fp_array[2].get<double>();
+		    okao->points.push_back(face_point);
+		  }
+
 
 		//人物ID,信頼度の取り出し
 		picojson::array id_array = 
@@ -144,10 +157,11 @@ namespace JsonToMsg{
 		okao->direction.y = direction[1];
 		okao->direction.r = direction[2];
 		okao->direction.conf = direction[3];
-
+		
 		okao->gaze_direction.x = gaze_direction[0];
 		okao->gaze_direction.y = gaze_direction[1];
 		okao->gaze_direction.conf = gaze_direction[2];
+		
 	      }	
 	  }    
       }
