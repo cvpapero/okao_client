@@ -44,7 +44,7 @@ mapで名前も出せるようにする
 #include <map>
 
 #include <humans_msgs/Humans.h>
-#include "okao_client/OkaoStack.h"
+//#include "okao_client/OkaoStack.h"
 
 #define HEAD 3
 #define SHOULDER_L 4

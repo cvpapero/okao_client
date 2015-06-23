@@ -12,7 +12,7 @@
 #include <sensor_msgs/image_encodings.h>
 //オリジナルのメッセージ
 #include <humans_msgs/Humans.h>
-#include "okao_client/OkaoStack.h"
+//#include "okao_client/OkaoStack.h"
 //OpenCV
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -95,6 +95,7 @@ public:
   //コールバック関数
   void imageCb(const sensor_msgs::ImageConstPtr& imgmsg)
   {
+    humans_msgs::Humans hums; 
     Mat rgbImage,grayImage;//画像イメージ格納用
     cv_bridge::CvImagePtr cv_ptr;
     try
@@ -168,7 +169,7 @@ public:
 	      {
 		cv::Scalar red(0,0,200);
 		cv::Scalar green(0,200,0);
-
+		/*
 		for(int i = 0; i < face_msg.points.size(); ++i)
 		  {
 		    stringstream ss;
@@ -179,24 +180,37 @@ public:
 				 cv::Point(face_msg.points[i].x,face_msg.points[i].y), FONT_HERSHEY_SIMPLEX, 2.5, 
 				 green, 2, CV_AA);
 		  } 
-
+		*/
 		int rootX = face_msg.points[3].x + (face_msg.points[5].x - face_msg.points[3].x)/2;
 		int rootY = face_msg.points[3].y + (face_msg.points[5].y - face_msg.points[3].y)/2;
 
-		cout <<"y_deg:" << face_msg.gaze_direction.y << ", x_deg:" << face_msg.gaze_direction.x << endl;
-		int lon = 100;
-		double rad = atan2(sin(face_msg.gaze_direction.y*M_PI/180), sin(face_msg.gaze_direction.x*M_PI/180));
-		//cout << "deg:" << rad * (180/M_PI) << endl;
-		double x_rad = face_msg.gaze_direction.x*M_PI/180;
-		double y_rad = face_msg.gaze_direction.y*M_PI/180;
-		cv::line( rgbImage, cv::Point(rootX, rootY),  cv::Point(rootX+lon*cos(rad), rootY-lon*sin(rad)),red, 3, 4);
-		//cv::line( rgbImage, cv::Point(rootX, rootY),  cv::Point(lon*cos(y_rad), lon*sin(y_rad)),red, 3, 4);
-		//int face_w = face_msg.position.rb.x - face_msg.position.lt.x;
-		//int face_h = face_msg.position.rb.y - face_msg.position.lt.y;
-		//int face_cx = face_msg.position.lt.x + face_w / 2;
-		//int face_cy = face_msg.position.lt.y + face_h / 2;
 
+		if(face_msg.gaze_direction.conf > 200)
+		  {
+		    int dir_x = face_msg.gaze_direction.x;
+		    int dir_y = face_msg.gaze_direction.y;
+		    
+		    int dir_f_x = face_msg.direction.x;
+		    int dir_f_y = face_msg.direction.y;
 
+		    cout <<"y_g_deg:" << dir_y << ", x_g_deg:" << dir_x << endl;
+		    cout <<"y_f_deg:" << dir_f_y << ", x_f_deg:" << dir_f_x << endl;
+		    int lon = 100;
+		    double rad = atan2((double)sin(dir_y*M_PI/180.), sin((double)dir_x*M_PI/180.));
+		    double rad_f = atan2((double)sin(dir_f_y*M_PI/180.), sin((double)dir_f_x*M_PI/180.));
+		    cout << "rad_f to deg:" << rad_f * (180./M_PI) <<endl;
+		    //cout << "deg:" << rad * (180/M_PI) << endl;
+		    //double x_rad = direction_x*M_PI/180;
+		    //double y_rad = face_msg.gaze_direction.y*M_PI/180;
+		    cv::line( rgbImage, cv::Point(rootX, rootY),  cv::Point(rootX+lon*cos(rad_f), rootY),green, 3, 4);
+		    cv::line( rgbImage, cv::Point(rootX, rootY),  cv::Point(rootX+lon*cos(rad), rootY),red, 3, 4);
+		    //cv::line( rgbImage, cv::Point(rootX, rootY),  cv::Point(lon*cos(y_rad), lon*sin(y_rad)),red, 3, 4);
+		    //int face_w = face_msg.position.rb.x - face_msg.position.lt.x;
+		    //int face_h = face_msg.position.rb.y - face_msg.position.lt.y;
+		    //int face_cx = face_msg.position.lt.x + face_w / 2;
+		    //int face_cy = face_msg.position.lt.y + face_h / 2;
+
+		  }
 
 		cv::Point lt(face_msg.position.lt.x, face_msg.position.lt.y);
 		cv::Point rb(face_msg.position.rb.x, face_msg.position.rb.y);
@@ -208,6 +222,9 @@ public:
 		//	     green, 2, CV_AA);
 	      }
 
+	    humans_msgs::Human hum;
+	    hum.face = face_msg;
+	    hums.human.push_back(hum);
 	    cv::imshow(OPENCV_WINDOW, rgbImage);
 	    
 	    cv::waitKey(1);
@@ -218,13 +235,17 @@ public:
 	std::cout << e.what() << std::endl;
 	return ;
       }   
+
+
+    okaoData_pub_.publish(hums);
+
   }
   
 };
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "OkaoClient");
+  ros::init(argc, argv, "okao_client_image");
   
   ImageConverter ic;
   

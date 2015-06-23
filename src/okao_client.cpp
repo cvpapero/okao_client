@@ -27,7 +27,7 @@ okaoとokaoNotは、やはり同じパブリッシュ先を持つべき
 #include <geometry_msgs/Point.h>
 //オリジナルのメッセージ
 #include <humans_msgs/Humans.h>
-#include "okao_client/OkaoStack.h"
+//#include "okao_client/OkaoStack.h"
 //OpenCV
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
