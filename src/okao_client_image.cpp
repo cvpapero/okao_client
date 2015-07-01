@@ -191,22 +191,24 @@ public:
 		  {
 		    int dir_g_h = face_msg.gaze_direction.x;
 		    int dir_g_v = face_msg.gaze_direction.y;
+		    int dir_g_c = face_msg.gaze_direction.conf;
 		    
 		    int dir_f_h = face_msg.direction.x;
 		    int dir_f_v = face_msg.direction.y;
+		    int dir_f_c = face_msg.direction.conf;
 
-		    cout <<"g_deg_v:" << dir_g_v << ", g_deg_h:" << dir_g_h << endl;
-		    cout <<"f_deg_v:" << dir_f_v << ", f_deg_h:" << dir_f_h << endl;
+		    cout <<"gaze deg_v:" << dir_g_v << ", deg_h:" << dir_g_h << ", conf"<< dir_g_c <<endl;
+		    cout <<"face deg_v:" << dir_f_v << ", deg_h:" << dir_f_h << ", conf"<< dir_f_c << endl;
 		    
 		    //double rad = atan2((double)sin(dir_y*M_PI/180.), sin((double)dir_x*M_PI/180.));
 		    //double rad_f = atan2((double)sin(dir_f_y*M_PI/180.), sin((double)dir_f_x*M_PI/180.));
 		    double rad_f = (double)dir_f_h*M_PI/180.;
  		    double rad_g = (double)dir_g_h*M_PI/180.;
-		    cout << "rad_f to deg:" << rad_f * (180./M_PI) <<endl;
+		    //cout << "rad_f to deg:" << rad_f * (180./M_PI) <<endl;
 		    //cout << "deg:" << rad * (180/M_PI) << endl;
 		    //double x_rad = direction_x*M_PI/180;
 		    //double y_rad = face_msg.gaze_direction.y*M_PI/180;
-		    cout <<"sin(gaze): " << sin(rad_g) << ", sin(face): " << sin(rad_f)<<endl; 
+		    //cout <<"sin(gaze): " << sin(rad_g) << ", sin(face): " << sin(rad_f)<<endl; 
 
 		    int tol = 7;
 		    if(dir_f_h < 0 && dir_g_h > 0)
