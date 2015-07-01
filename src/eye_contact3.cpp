@@ -7,6 +7,10 @@
 #include <functional>
 #include <algorithm>
 
+#define STATE1 1
+#define STATE2 2
+#define STATE3 3
+
 using namespace std;
 
 class EyeContact
@@ -19,19 +23,33 @@ private:
   int queue_size;
   int tolerance;
   int conf_th;
-
+  int contact_count;
+  int period;
+  int co_time[2];
+  int th_time[2];
+  bool inv;
   stringstream file_name;
+  int state;
   //ofstream ofs;
 
 public:
   EyeContact()
-  {    
-    queue_size = 15;
-    
+  {   
+    state = STATE1; 
+    contact_count = 0;
+    period = 10;
+    queue_size = 5;
+    inv = false;
+
+    co_time[0] = 0;
+    co_time[1] = 0;
+    th_time[0] = 10;
+    th_time[1] = 5;
+
     for(int i = 0; i < queue_size; ++i)
       buff.push_back(false);
     
-    tolerance = 10;
+    tolerance = 7;
     conf_th = 100;
     eye_sub = nh.subscribe("/humans/okao_server", 1, 
 			   &EyeContact::Callback, this);
@@ -66,14 +84,17 @@ public:
 	//ofstream ofs( file_name.str().c_str(), std::ios::out | std::ios::app );
 	//ofs << dir_horizon << ", " << dir_conf 
 	//    << ", " << gaze_horizon << ", " << gaze_conf << endl;
+
+	/*
 	ofstream ofs( file_name.str().c_str(), std::ios::out | std::ios::app );
 	ofs << gaze_horizon << ", " << gaze_conf << endl;
+	*/
+
 	cout <<"face:" << dir_horizon <<", gaze:" << gaze_horizon 
 	     << ", face_conf:"<< dir_conf << ", gaze_conf:"<< gaze_conf << endl;
-	//buff.push_back(CheckEyeContactDirGaze(dir_horizon, gaze_horizon, dir_conf));
-	buff.push_back(CheckEyeContactDir(gaze_horizon, dir_conf));
+	buff.push_back(CheckEyeContactDirAndGaze(dir_horizon, gaze_horizon, dir_conf));
+	//buff.push_back(CheckEyeContactDir(dir_horizon, dir_conf));
 	buff.erase(buff.begin());
-
 
 	int eye_state[2];
 	eye_state[0] = 0;
@@ -90,18 +111,68 @@ public:
 	      }
 	  }
 
+	//現在目が合っているかどうか判定
+	bool contact_state;
 	if(eye_state[0]>eye_state[1])
 	  {
-	    ROS_INFO("eye contact!! %d, %d", eye_state[0],eye_state[1]);
-	    torf.data= true;
-	    eye_pub.publish( torf );
+	    contact_state = true;
 	  }
 	else
 	  {
-	    ROS_WARN("eye not contact!! %d, %d", eye_state[0],eye_state[1]);
-	    torf.data= false;
-	    eye_pub.publish( torf );
+	    contact_state = false;
 	  }
+
+
+	//状態遷移
+	bool mode;
+	if(state == STATE1)
+	  {
+	    if(contact_state)
+	      {
+		state = STATE2;
+	      }
+	    else
+	      state = STATE1;
+
+	    mode = false;  
+	  }
+	else if(state == STATE2)
+	  {
+	    co_time[1] = 0;
+	    ++co_time[0];
+	    if( !contact_state )
+	      state = STATE1;
+	    else
+	      {
+		if( co_time[0] > th_time[0] )
+		  state = STATE3;
+		else
+		  state = STATE2;
+	      }
+	    mode = false;
+	  }
+	else if(state == STATE3)
+	  {
+	    co_time[0] = 0;
+	    ++co_time[1];
+	   
+	    if( !contact_state )
+	      state = STATE1;
+	    else
+	      {
+		if( co_time[1] > th_time[1] )
+		  state = STATE2;
+		else
+		  state = STATE3;
+	      }
+	    mode = true;
+	  }
+	cout << "now state: "<<state<<endl;
+	  //cout << "contact count: "<<contact_count<<endl;
+
+	torf.data= mode;	
+       
+	eye_pub.publish( torf );
       }
   }
 
@@ -118,16 +189,34 @@ public:
       return false;
   }
 
-  bool CheckEyeContactDirGaze(int horizon, int g_horizon, int conf)
+  bool CheckEyeContactDirAndGaze(int f_horizon, int g_horizon, int conf)
   {
     //cout <<"horizon:" <<horizon << ", conf:"<< conf<< endl;
-    
-    if(tolerance>abs(abs(horizon)-abs(g_horizon)))
-      if(conf > conf_th)
-	return true;
-      else
-	return false;
-    else
+
+    if(conf)
+      {
+	if( f_horizon < 0 && g_horizon > 0 )
+	  {
+	    return true;
+	  }    
+	else if( f_horizon > 0 && g_horizon < 0 )
+	  {
+	    return true;
+	  }
+	else if(abs(f_horizon) < tolerance && tolerance>abs(abs(abs(f_horizon) - abs(g_horizon))))
+	  {
+	/*
+	if(conf > conf_th)
+	  return true;
+	else
+	  return false;
+	*/
+	    return true;
+	  }
+	else
+	  return false;
+      }
+    else 
       return false;
   }
 

@@ -167,8 +167,7 @@ public:
 
 	    if( p_ok )
 	      {
-		cv::Scalar red(0,0,200);
-		cv::Scalar green(0,200,0);
+
 		/*
 		for(int i = 0; i < face_msg.points.size(); ++i)
 		  {
@@ -181,35 +180,62 @@ public:
 				 green, 2, CV_AA);
 		  } 
 		*/
+		int lon = (face_msg.points[5].x - face_msg.points[3].x)*3;
 		int rootX = face_msg.points[3].x + (face_msg.points[5].x - face_msg.points[3].x)/2;
 		int rootY = face_msg.points[3].y + (face_msg.points[5].y - face_msg.points[3].y)/2;
 
+		cv::Scalar color_f;
+		cv::Scalar color_g;
 
 		if(face_msg.gaze_direction.conf > 200)
 		  {
-		    int dir_x = face_msg.gaze_direction.x;
-		    int dir_y = face_msg.gaze_direction.y;
+		    int dir_g_h = face_msg.gaze_direction.x;
+		    int dir_g_v = face_msg.gaze_direction.y;
 		    
-		    int dir_f_x = face_msg.direction.x;
-		    int dir_f_y = face_msg.direction.y;
+		    int dir_f_h = face_msg.direction.x;
+		    int dir_f_v = face_msg.direction.y;
 
-		    cout <<"y_g_deg:" << dir_y << ", x_g_deg:" << dir_x << endl;
-		    cout <<"y_f_deg:" << dir_f_y << ", x_f_deg:" << dir_f_x << endl;
-		    int lon = 100;
-		    double rad = atan2((double)sin(dir_y*M_PI/180.), sin((double)dir_x*M_PI/180.));
-		    double rad_f = atan2((double)sin(dir_f_y*M_PI/180.), sin((double)dir_f_x*M_PI/180.));
+		    cout <<"g_deg_v:" << dir_g_v << ", g_deg_h:" << dir_g_h << endl;
+		    cout <<"f_deg_v:" << dir_f_v << ", f_deg_h:" << dir_f_h << endl;
+		    
+		    //double rad = atan2((double)sin(dir_y*M_PI/180.), sin((double)dir_x*M_PI/180.));
+		    //double rad_f = atan2((double)sin(dir_f_y*M_PI/180.), sin((double)dir_f_x*M_PI/180.));
+		    double rad_f = (double)dir_f_h*M_PI/180.;
+ 		    double rad_g = (double)dir_g_h*M_PI/180.;
 		    cout << "rad_f to deg:" << rad_f * (180./M_PI) <<endl;
 		    //cout << "deg:" << rad * (180/M_PI) << endl;
 		    //double x_rad = direction_x*M_PI/180;
 		    //double y_rad = face_msg.gaze_direction.y*M_PI/180;
-		    cv::line( rgbImage, cv::Point(rootX, rootY),  cv::Point(rootX+lon*cos(rad_f), rootY),green, 3, 4);
-		    cv::line( rgbImage, cv::Point(rootX, rootY),  cv::Point(rootX+lon*cos(rad), rootY),red, 3, 4);
-		    //cv::line( rgbImage, cv::Point(rootX, rootY),  cv::Point(lon*cos(y_rad), lon*sin(y_rad)),red, 3, 4);
-		    //int face_w = face_msg.position.rb.x - face_msg.position.lt.x;
-		    //int face_h = face_msg.position.rb.y - face_msg.position.lt.y;
-		    //int face_cx = face_msg.position.lt.x + face_w / 2;
-		    //int face_cy = face_msg.position.lt.y + face_h / 2;
+		    cout <<"sin(gaze): " << sin(rad_g) << ", sin(face): " << sin(rad_f)<<endl; 
 
+		    int tol = 7;
+		    if(dir_f_h < 0 && dir_g_h > 0)
+		      {
+			color_g = cv::Scalar(0,0,255);
+			color_f = cv::Scalar(255,0,0);
+		      }
+		    else if(dir_f_h > 0 && dir_g_h < 0)
+		      {
+			color_g = cv::Scalar(0,255,255);
+			color_f = cv::Scalar(255,255,0);
+		      }
+		    else if( (abs(abs(dir_f_h) - abs(dir_g_h) ) < tol) && abs(dir_f_h) < tol )
+		      {
+			color_g = cv::Scalar(255,0,255);
+			color_f = cv::Scalar(255,0,255);
+		      }
+		    else
+		      {
+			color_g = cv::Scalar(0,0,0);
+			color_f = cv::Scalar(0,0,0);
+		      }
+		    cv::line( rgbImage, cv::Point(rootX, rootY),  cv::Point(rootX+lon*sin(rad_g), rootY),color_g, 3, 4);
+		    //cv::line( rgbImage, cv::Point(rootX, rootY),  cv::Point(lon*cos(y_rad), lon*sin(y_rad)),red, 3, 4);
+		    int face_w = face_msg.position.rb.x - face_msg.position.lt.x;
+		    int face_h = face_msg.position.rb.y - face_msg.position.lt.y;
+		    int face_cx = face_msg.position.lt.x + face_w / 2;
+		    int face_cy = face_msg.position.lt.y + face_h / 2;
+		    cv::line( rgbImage, cv::Point(face_cx, face_cy),  cv::Point(face_cx+lon*sin(rad_f), face_cy),color_f, 3, 4);
 		  }
 
 		cv::Point lt(face_msg.position.lt.x, face_msg.position.lt.y);

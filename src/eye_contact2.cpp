@@ -19,15 +19,21 @@ private:
   int queue_size;
   int tolerance;
   int conf_th;
+  int contact_count;
+  int period;
 
+  bool inv;
   stringstream file_name;
   //ofstream ofs;
 
 public:
   EyeContact()
   {    
+    contact_count = 0;
+    period = 10;
     queue_size = 15;
-    
+    inv = false;
+
     for(int i = 0; i < queue_size; ++i)
       buff.push_back(false);
     
@@ -66,8 +72,12 @@ public:
 	//ofstream ofs( file_name.str().c_str(), std::ios::out | std::ios::app );
 	//ofs << dir_horizon << ", " << dir_conf 
 	//    << ", " << gaze_horizon << ", " << gaze_conf << endl;
+
+	/*
 	ofstream ofs( file_name.str().c_str(), std::ios::out | std::ios::app );
 	ofs << gaze_horizon << ", " << gaze_conf << endl;
+	*/
+
 	cout <<"face:" << dir_horizon <<", gaze:" << gaze_horizon 
 	     << ", face_conf:"<< dir_conf << ", gaze_conf:"<< gaze_conf << endl;
 	//buff.push_back(CheckEyeContactDirGaze(dir_horizon, gaze_horizon, dir_conf));
@@ -90,18 +100,51 @@ public:
 	      }
 	  }
 
+	bool tmp;
 	if(eye_state[0]>eye_state[1])
 	  {
+	    ++contact_count;
 	    ROS_INFO("eye contact!! %d, %d", eye_state[0],eye_state[1]);
-	    torf.data= true;
-	    eye_pub.publish( torf );
+	    tmp = true;
+
+	    //contact_countが一定値たまったらtrueとfalseをひっくり返す
+	    if(contact_count%period == 0)
+	      {
+		if(inv)
+		  inv = false;
+		else
+		  inv = true;
+	      }
+	    /*
+	    if(inv)
+	      if(tmp)
+		torf.data = false;
+	      else
+		torf.data = true;
+	    else
+	      torf.data= tmp;
+	    */
+	    if(inv)
+	      if(tmp)
+		tmp = false;
+	      else
+		tmp = true;
+	    
+
+
 	  }
 	else
 	  {
+	    contact_count = 0;
 	    ROS_WARN("eye not contact!! %d, %d", eye_state[0],eye_state[1]);
-	    torf.data= false;
-	    eye_pub.publish( torf );
+	    tmp = false;
+	    //eye_pub.publish( torf );
 	  }
+	cout << "contact count: "<<contact_count<<endl;
+
+	torf.data= tmp;	
+       
+	eye_pub.publish( torf );
       }
   }
 

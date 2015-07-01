@@ -201,6 +201,6 @@ target_link_libraries(recog_info_vision ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
 
 #サブモジュール
-add_executable(eye_contact src/eye_contact.cpp)
-target_link_libraries(eye_contact ${catkin_LIBRARIES})
+add_executable(eye_contact3 src/eye_contact3.cpp)
+target_link_libraries(eye_contact3 ${catkin_LIBRARIES})
 
