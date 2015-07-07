@@ -86,12 +86,14 @@ namespace JsonToMsg{
 		  }
 
 
-		//人物ID,信頼度の取り出し
+		//人物ID,信頼度,顔機関開閉度の取り出し
 		picojson::array id_array = 
 		  person_obj["id"].get<picojson::array>();
 		picojson::array db_info_array = 
 		  person_obj["db_info"].get<picojson::array>();
-		
+		picojson::array open_level_array =
+		  person_obj["open_level"].get<picojson::array>();
+
 		double tmp_id[3], tmp_conf[3]; 
 		std::string tmp_name[3], tmp_grade[3], tmp_laboratory[3];
 		
@@ -111,6 +113,16 @@ namespace JsonToMsg{
 		      db_info_obj["laboratory"].get<std::string>();		 
 		  }	
 		
+		for(picojson::array::iterator ol_it = open_level_array.begin();
+		    ol_it != open_level_array.end(); ++ol_it)
+		  {
+		    picojson::array ol_array = ol_it->get<picojson::array>();
+		    humans_msgs::DegConf dc;
+		    dc.deg = (int)ol_array[0].get<double>();//開閉度
+		    dc.conf = (int)ol_array[1].get<double>();//信頼度
+		    okao->open_level.push_back(dc);
+		  }
+
 		//一人目の信頼度を利用する
 		if(tmp_conf[0] < threshold)
 		  {

@@ -1,7 +1,13 @@
+/*
+2015.7.6
+using eyeballs_msgs
+*/
+
 #include <ros/ros.h>
 #include <iostream>
 
 #include "humans_msgs/Humans.h"
+#include "eyeballs_msgs/Eyeballs.h"
 #include "std_msgs/Bool.h"
 #include <fstream>
 #include <functional>
@@ -33,8 +39,7 @@ private:
 
   stringstream file_name;
   int state;
-  ros::Time former_time;
-  ros::Time now_time;
+  double former_time, now_time;
   //ofstream ofs;
 
 public:
@@ -44,7 +49,6 @@ public:
     contact_count = 0;
 
     queue_size = 10;
-
 
     count_time[0] = 0;
     count_time[1] = 0;
@@ -63,8 +67,9 @@ public:
     eye_sub = nh.subscribe("/humans/okao_server", 1, 
 			   &EyeContact::Callback, this);
 
-    eye_pub = nh.advertise<std_msgs::Bool>("/humans/eye_contact", 1);
-    former_time = ros::Time::now();
+    //eye_pub = nh.advertise<std_msgs::Bool>("/humans/eye_contact", 1);
+    eye_pub = nh.advertise<eyeballs_msgs::Eyeballs>("/humans/eye_contact", 1);
+    former_time = ros::Time::now().toSec();
   }
   ~EyeContact()
   {
@@ -73,8 +78,10 @@ public:
 
   void Callback(const humans_msgs::HumansConstPtr& msg)
   {
-    now_time = ros::Time::now();
+    now_time = ros::Time::now().toSec();
     std_msgs::Bool torf;
+    eyeballs_msgs::Eyeballs ebs;
+
     for(int i = 0; i < msg->human.size(); ++i)
       {
 	int dir_horizon = msg->human[i].face.direction.x;
@@ -109,11 +116,15 @@ public:
 	    if(contact_state)
 	      {
 		state = STATE2;
+		ebs.right.x = 200;
+		ebs.left.x = 100;
 		mode = true;
 	      }
 	    else
 	      {
 		state = STATE1;
+		ebs.right.x = 0;
+		ebs.left.x = 0;
 		mode = false;
 	      }  
 	  }
@@ -130,6 +141,8 @@ public:
 		else
 		  state = STATE2;
 	      }
+	    ebs.right.x = 0;
+	    ebs.left.x = 0;
 	    mode = false;
 	  }
 	else if(state == STATE3)
@@ -146,26 +159,27 @@ public:
 		else
 		  state = STATE3;
 	      }
+	    ebs.right.x = 200;
+	    ebs.left.x = 100;
 	    mode = true;
 	  }
 
-	test = test + ros::Time::now().toSec();
-	cout << "test:"<<test<<endl;
-
+	//test = test + ros::Time::now().toSec();
+	//cout << "test:"<<test<<endl;
+	double fps = 1./ros::Duration(now_time-former_time).toSec();
 	cout << "now state: "<<state<<endl;
-	/*
-	cout << "Duration(1.0):"<<ros::Duration(1.0).toSec()<<endl;
-	*/
-	cout << "Duration(now-former):"<<ros::Duration(now_time-former_time).toSec()<<endl;
-	
+	cout << "Duration(now-former):"<<ros::Duration(now_time-former_time).toSec()<<endl;	
 	cout << "count_time[0]:"<<count_time[0]<<", count_time[1]:"<<count_time[1]<<endl;
 	cout << "threshold_time[0]:"<<threshold_time[0]<<", threshold_time[1]:"<<threshold_time[1]<<endl;
-	cout << "fps:"<<1./ros::Duration(now_time-former_time).toSec()<<endl;
+	cout << "fps:"<< fps <<endl;
 
-	former_time = ros::Time::now();
-	torf.data= mode;	
-       
-	eye_pub.publish( torf );
+	former_time = ros::Time::now().toSec();
+	torf.data= mode;
+	ebs.state = state;
+	ebs.fps = fps;	
+	cout << "ebs fps:"<<ebs.fps<<endl;
+	ebs.header.stamp = ros::Time::now();
+	eye_pub.publish( ebs );
       }
   }
 
