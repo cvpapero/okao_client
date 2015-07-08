@@ -32,14 +32,20 @@ private:
   int tolerance;
   int conf_th;
   int contact_count;
+  int img_width;
+  int img_height;
 
   double count_time[2];
   double threshold_time[2];
-  double test;
+  double tm_param[2];
+  double test,fps;
 
   stringstream file_name;
   int state;
   double former_time, now_time;
+
+  int micro_motion;
+  int blink_torf;
   //ofstream ofs;
 
 public:
@@ -52,22 +58,27 @@ public:
 
     count_time[0] = 0;
     count_time[1] = 0;
-
+    tm_param[0] = 2.0;
+    tm_param[1] = 0.5;
     //見つめる時間
-    threshold_time[0] = ros::Duration(1.0).toSec();
-
+    threshold_time[0] = ros::Duration(tm_param[0]).toSec();
     //目をそらす時間
-    threshold_time[1] = ros::Duration(0.5).toSec();
+    threshold_time[1] = ros::Duration(tm_param[1]).toSec();
 
     for(int i = 0; i < queue_size; ++i)
       point_buff.push_back(0);
     
     tolerance = 7;
     conf_th = 100;
+
+    img_width = 960;
+    img_height = 720;
+
+    micro_motion = 0;
+
     eye_sub = nh.subscribe("/humans/okao_server", 1, 
 			   &EyeContact::Callback, this);
 
-    //eye_pub = nh.advertise<std_msgs::Bool>("/humans/eye_contact", 1);
     eye_pub = nh.advertise<eyeballs_msgs::Eyeballs>("/humans/eye_contact", 1);
     former_time = ros::Time::now().toSec();
   }
@@ -78,12 +89,35 @@ public:
 
   void Callback(const humans_msgs::HumansConstPtr& msg)
   {
+    cout << "callback" <<endl;
     now_time = ros::Time::now().toSec();
-    std_msgs::Bool torf;
     eyeballs_msgs::Eyeballs ebs;
-
+    blink_torf = 2;
     for(int i = 0; i < msg->human.size(); ++i)
       {
+	//まばたきの判定
+	if(msg->human[i].face.open_level.size())
+	  {
+	    int open_deg0 = msg->human[i].face.open_level[0].deg;
+	    int open_conf0 = msg->human[i].face.open_level[0].conf;
+	    
+	    int open_deg1 = msg->human[i].face.open_level[1].deg;
+	    int open_conf1 = msg->human[i].face.open_level[1].conf;
+	    
+	    if((open_deg0 < 200 && open_conf0 > 100) && (open_deg1 < 200 && open_conf1 > 100))
+	      {
+		blink_torf = 0;
+		ROS_ERROR("blink!");
+	      }
+	    else
+	      {
+		blink_torf = 1;
+		ROS_ERROR("no blink!");
+	      }
+	  }
+	else
+	  blink_torf = 2;
+
 	int dir_horizon = msg->human[i].face.direction.x;
 	int gaze_horizon = msg->human[i].face.gaze_direction.x;
 	int dir_conf = msg->human[i].face.direction.conf;
@@ -108,24 +142,40 @@ public:
 	    contact_state = false;
 	  }
 
+	if( micro_motion > 0)
+	  micro_motion = -3;
+	else
+	  micro_motion = 3;
+
+
+	//顔が右左のどちら側にあるか判定
+	int gap;
+	int face_width = abs(msg->human[i].face.position.rt.x - msg->human[i].face.position.lt.x);
+	if((msg->human[i].face.position.rt.x - face_width/2) > img_width/2)
+	  {
+	    cout << "face left" << endl;
+	    gap = 150;
+	  }
+	else
+	  {
+	    cout << "face right" << endl;
+	    gap = -150;
+	  }
 
 	//状態遷移
-	bool mode;
 	if(state == STATE1)
 	  {
 	    if(contact_state)
 	      {
 		state = STATE2;
-		ebs.right.x = 200;
-		ebs.left.x = 100;
-		mode = true;
+		ebs.right.x = gap;
+		ebs.left.x = gap;
 	      }
 	    else
 	      {
 		state = STATE1;
-		ebs.right.x = 0;
-		ebs.left.x = 0;
-		mode = false;
+		ebs.right.x = micro_motion;
+		ebs.left.x = micro_motion;
 	      }  
 	  }
 	else if(state == STATE2)
@@ -141,9 +191,8 @@ public:
 		else
 		  state = STATE2;
 	      }
-	    ebs.right.x = 0;
-	    ebs.left.x = 0;
-	    mode = false;
+	    ebs.right.x = micro_motion;
+	    ebs.left.x = micro_motion;
 	  }
 	else if(state == STATE3)
 	  {
@@ -159,30 +208,46 @@ public:
 		else
 		  state = STATE3;
 	      }
-	    ebs.right.x = 200;
-	    ebs.left.x = 100;
-	    mode = true;
+	    ebs.right.x = gap;
+	    ebs.left.x = gap;
 	  }
 
 	//test = test + ros::Time::now().toSec();
 	//cout << "test:"<<test<<endl;
-	double fps = 1./ros::Duration(now_time-former_time).toSec();
+	fps = 1./ros::Duration(now_time-former_time).toSec();
 	cout << "now state: "<<state<<endl;
 	cout << "Duration(now-former):"<<ros::Duration(now_time-former_time).toSec()<<endl;	
 	cout << "count_time[0]:"<<count_time[0]<<", count_time[1]:"<<count_time[1]<<endl;
 	cout << "threshold_time[0]:"<<threshold_time[0]<<", threshold_time[1]:"<<threshold_time[1]<<endl;
 	cout << "fps:"<< fps <<endl;
 
-	former_time = ros::Time::now().toSec();
-	torf.data= mode;
-	ebs.state = state;
-	ebs.fps = fps;	
-	cout << "ebs fps:"<<ebs.fps<<endl;
-	ebs.header.stamp = ros::Time::now();
-	eye_pub.publish( ebs );
+	if(msg->human[i].face.persons.size())
+	  {
+	    ebs.name = msg->human[i].face.persons[0].name;
+	    ebs.okao_id = msg->human[i].face.persons[0].okao_id;
+	  }
       }
+    former_time = ros::Time::now().toSec();
+    ebs.state = state;
+    ebs.fps = fps;
+    
+    cout << "ebs fps:"<<ebs.fps<<endl;
+    ebs.header.stamp = ros::Time::now();
+    cout << "torf:"<<blink_torf<<endl;
+    if(blink_torf == 0)
+      ebs.blink = 0;
+    else if(blink_torf == 1)
+      ebs.blink = 1;
+    else
+      ebs.blink = GetRandom(0, 19);
+    
+    eye_pub.publish( ebs );
   }
 
+  int GetRandom(int min, int max)
+  {
+    return min + (int)(rand()*(max-min+1.0)/(1.0+RAND_MAX));
+  }
 
   int PointEyeContactDirAndGaze(int f_horizon, int g_horizon, int f_conf, int g_conf)
   {
