@@ -73,8 +73,8 @@ public:
     tolerance = 7;
     conf_th = 100;
 
-    img_width = 960;
-    img_height = 720;
+    img_width = 640;
+    img_height = 360;
 
     micro_motion = 0;
     not_found = 0;
@@ -265,7 +265,7 @@ public:
     else if(blink_torf == 1)
       ebs.blink = 1;
     else
-      ebs.blink = GetRandom(0, 19);
+      ebs.blink = GetRandom(0, 39);
     
     eye_pub.publish( ebs );
   }
