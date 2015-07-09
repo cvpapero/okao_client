@@ -103,7 +103,7 @@ public:
 	//画像メッセージ(ROS)をMat型(OpenCV)に代入し、グレイスケール変換する
 	cv_ptr = cv_bridge::toCvCopy(imgmsg, sensor_msgs::image_encodings::BGR8);
 	rgbImage = cv_ptr->image;
-	resize(rgbImage, rgbImage, Size(1280, 720));
+	//resize(rgbImage, rgbImage, Size(1280, 720));
 	cv::cvtColor(rgbImage,grayImage,CV_BGR2GRAY);
 
       }
@@ -123,8 +123,8 @@ public:
 	double height = rgbImage.rows;
 	double resize_width =  width / img.cols; 
 	double resize_height = height / img.rows;
-	//cout<<"img.cols: "<< img.cols << endl;
-	//cout<<"resize_width: "<< resize_width << endl;
+	cout<<"img.cols: "<< img.cols <<",img.rows:"<< img.rows<< endl;
+	cout<<"resize_width: "<< resize_width << endl;
 	// 画像をエンコードする必要があれば
 	std::vector<int> encodeParam(2);
 	encodeParam[0] = CV_IMWRITE_PNG_COMPRESSION;
@@ -197,9 +197,9 @@ public:
 		    int dir_f_v = face_msg.direction.y;
 		    int dir_f_c = face_msg.direction.conf;
 
-		    cout <<"gaze deg_v:" << dir_g_v << ", deg_h:" << dir_g_h << ", conf"<< dir_g_c <<endl;
-		    cout <<"face deg_v:" << dir_f_v << ", deg_h:" << dir_f_h << ", conf"<< dir_f_c << endl;
-		    
+		    cout <<"gaze deg_v:" << dir_g_v << ", deg_h:" << dir_g_h << ", conf:"<< dir_g_c <<endl;
+		    cout <<"face deg_v:" << dir_f_v << ", deg_h:" << dir_f_h << ", conf:"<< dir_f_c << endl;
+
 		    //double rad = atan2((double)sin(dir_y*M_PI/180.), sin((double)dir_x*M_PI/180.));
 		    //double rad_f = atan2((double)sin(dir_f_y*M_PI/180.), sin((double)dir_f_x*M_PI/180.));
 		    double rad_f = (double)dir_f_h*M_PI/180.;

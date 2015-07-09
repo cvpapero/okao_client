@@ -17,6 +17,7 @@ using eyeballs_msgs
 #define STATE1 1
 #define STATE2 2
 #define STATE3 3
+#define STATE4 4
 
 using namespace std;
 
@@ -46,6 +47,7 @@ private:
 
   int micro_motion;
   int blink_torf;
+  int not_found;
   //ofstream ofs;
 
 public:
@@ -75,6 +77,7 @@ public:
     img_height = 720;
 
     micro_motion = 0;
+    not_found = 0;
 
     eye_sub = nh.subscribe("/humans/okao_server", 1, 
 			   &EyeContact::Callback, this);
@@ -93,138 +96,161 @@ public:
     now_time = ros::Time::now().toSec();
     eyeballs_msgs::Eyeballs ebs;
     blink_torf = 2;
+
+   
+      
     for(int i = 0; i < msg->human.size(); ++i)
       {
-	//まばたきの判定
-	if(msg->human[i].face.open_level.size())
+	if(msg->human[i].face.persons.size())
 	  {
-	    int open_deg0 = msg->human[i].face.open_level[0].deg;
-	    int open_conf0 = msg->human[i].face.open_level[0].conf;
-	    
-	    int open_deg1 = msg->human[i].face.open_level[1].deg;
-	    int open_conf1 = msg->human[i].face.open_level[1].conf;
-	    
-	    if((open_deg0 < 200 && open_conf0 > 100) && (open_deg1 < 200 && open_conf1 > 100))
+	    //まばたきの判定
+	    if(msg->human[i].face.open_level.size())
 	      {
-		blink_torf = 0;
-		ROS_ERROR("blink!");
+		int open_deg0 = msg->human[i].face.open_level[0].deg;
+		int open_conf0 = msg->human[i].face.open_level[0].conf;
+		
+		int open_deg1 = msg->human[i].face.open_level[1].deg;
+		int open_conf1 = msg->human[i].face.open_level[1].conf;
+		
+		if((open_deg0 < 200 && open_conf0 > 100) && (open_deg1 < 200 && open_conf1 > 100))
+		  {
+		    blink_torf = 0;
+		    ROS_ERROR("blink!");
+		  }
+		else
+		  {
+		    blink_torf = 1;
+		    ROS_ERROR("no blink!");
+		  }
+	      }
+	    else
+	      blink_torf = 2;
+	    
+	    int dir_horizon = msg->human[i].face.direction.x;
+	    int gaze_horizon = msg->human[i].face.gaze_direction.x;
+	    int dir_conf = msg->human[i].face.direction.conf;
+	    int gaze_conf = msg->human[i].face.gaze_direction.conf;
+	    
+	    cout <<"face:" << dir_horizon <<", gaze:" << gaze_horizon 
+		 << ", face_conf:"<< dir_conf << ", gaze_conf:"<< gaze_conf << endl;
+	    
+	    point_buff.push_back(PointEyeContactDirAndGaze(dir_horizon, gaze_horizon, dir_conf, gaze_conf));
+	    point_buff.erase(point_buff.begin());
+	    
+	    //現在目が合っているかどうか判定
+	    bool contact_state;
+	    int point_sum = accumulate(point_buff.begin(), point_buff.end(), 0);
+	    cout << "point_sum:" << point_sum << endl;
+	    if( point_sum > queue_size/2)
+	      {
+		contact_state = true;
 	      }
 	    else
 	      {
-		blink_torf = 1;
-		ROS_ERROR("no blink!");
+		contact_state = false;
 	      }
-	  }
-	else
-	  blink_torf = 2;
-
-	int dir_horizon = msg->human[i].face.direction.x;
-	int gaze_horizon = msg->human[i].face.gaze_direction.x;
-	int dir_conf = msg->human[i].face.direction.conf;
-	int gaze_conf = msg->human[i].face.gaze_direction.conf;
-
-	cout <<"face:" << dir_horizon <<", gaze:" << gaze_horizon 
-	     << ", face_conf:"<< dir_conf << ", gaze_conf:"<< gaze_conf << endl;
-
-	point_buff.push_back(PointEyeContactDirAndGaze(dir_horizon, gaze_horizon, dir_conf, gaze_conf));
-	point_buff.erase(point_buff.begin());
-
-	//現在目が合っているかどうか判定
-	bool contact_state;
-	int point_sum = accumulate(point_buff.begin(), point_buff.end(), 0);
-	cout << "point_sum:" << point_sum << endl;
-	if( point_sum > queue_size/2)
-	  {
-	    contact_state = true;
-	  }
-	else
-	  {
-	    contact_state = false;
-	  }
-
-	if( micro_motion > 0)
-	  micro_motion = -3;
-	else
-	  micro_motion = 3;
-
-
-	//顔が右左のどちら側にあるか判定
-	int gap;
-	int face_width = abs(msg->human[i].face.position.rt.x - msg->human[i].face.position.lt.x);
-	if((msg->human[i].face.position.rt.x - face_width/2) > img_width/2)
-	  {
-	    cout << "face left" << endl;
-	    gap = 150;
-	  }
-	else
-	  {
-	    cout << "face right" << endl;
-	    gap = -150;
-	  }
-
-	//状態遷移
-	if(state == STATE1)
-	  {
-	    if(contact_state)
+	    
+	    if( micro_motion > 0)
+	      micro_motion = -3;
+	    else
+	      micro_motion = 3;
+	    
+	    
+	    //顔が右左のどちら側にあるか判定
+	    int gap;
+	    int face_width = abs(msg->human[i].face.position.rt.x - msg->human[i].face.position.lt.x);
+	    if((msg->human[i].face.position.rt.x - face_width/2) > img_width/2)
 	      {
-		state = STATE2;
+		cout << "face left" << endl;
+		gap = 150;
+	      }
+	    else
+	      {
+		cout << "face right" << endl;
+		gap = -150;
+	      }
+	    
+	    //状態遷移
+	    if(state == STATE1 || state == STATE4)
+	      {
+		if(contact_state)
+		  {
+		    state = STATE2;
+		    //ebs.right.x = gap;
+		    //ebs.left.x = gap;
+		    ebs.right.x = micro_motion;
+		    ebs.left.x = micro_motion;
+		  }
+		else
+		  {
+		    state = STATE1;
+		    ebs.right.x = micro_motion;
+		    ebs.left.x = micro_motion;
+		  }  
+	      }
+	    else if(state == STATE2)
+	      {
+		count_time[1] = 0;
+		count_time[0] = count_time[0] + ros::Duration(now_time-former_time).toSec();
+		if( !contact_state )
+		  state = STATE1;
+		else
+		  {
+		    if( count_time[0] > threshold_time[0] )
+		      state = STATE3;
+		else
+		  state = STATE2;
+		  }
+		ebs.right.x = micro_motion;
+		ebs.left.x = micro_motion;
+	      }
+	    else if(state == STATE3)
+	      {
+		count_time[0] = 0;
+		count_time[1] = count_time[1] + ros::Duration(now_time-former_time).toSec();
+		
+		if( !contact_state )
+		  state = STATE1;
+		else
+		  {
+		    if( count_time[1] > threshold_time[1] )
+		      state = STATE2;
+		    else
+		      state = STATE3;
+		  }
 		ebs.right.x = gap;
 		ebs.left.x = gap;
 	      }
-	    else
+	    
+	    //test = test + ros::Time::now().toSec();
+	    //cout << "test:"<<test<<endl;
+	    fps = 1./ros::Duration(now_time-former_time).toSec();
+	    cout << "now state: "<<state<<endl;
+	    cout << "Duration(now-former):"<<ros::Duration(now_time-former_time).toSec()<<endl;	
+	    cout << "count_time[0]:"<<count_time[0]<<", count_time[1]:"<<count_time[1]<<endl;
+	    cout << "threshold_time[0]:"<<threshold_time[0]<<", threshold_time[1]:"<<threshold_time[1]<<endl;
+	    cout << "fps:"<< fps <<endl;
+	    
+	    if(msg->human[i].face.persons.size())
 	      {
-		state = STATE1;
-		ebs.right.x = micro_motion;
-		ebs.left.x = micro_motion;
-	      }  
-	  }
-	else if(state == STATE2)
-	  {
-	    count_time[1] = 0;
-	    count_time[0] = count_time[0] + ros::Duration(now_time-former_time).toSec();
-	    if( !contact_state )
-	      state = STATE1;
-	    else
-	      {
-		if( count_time[0] > threshold_time[0] )
-		  state = STATE3;
-		else
-		  state = STATE2;
+		ebs.name = msg->human[i].face.persons[0].name;
+		ebs.okao_id = msg->human[i].face.persons[0].okao_id;
 	      }
-	    ebs.right.x = micro_motion;
-	    ebs.left.x = micro_motion;
 	  }
-	else if(state == STATE3)
+	else
 	  {
-	    count_time[0] = 0;
-	    count_time[1] = count_time[1] + ros::Duration(now_time-former_time).toSec();
-	   
-	    if( !contact_state )
-	      state = STATE1;
-	    else
+	    ROS_ERROR("face not found");
+	    //顔が見つからなかった場合の処理
+	    if(state != STATE4)
 	      {
-		if( count_time[1] > threshold_time[1] )
-		  state = STATE2;
-		else
-		  state = STATE3;
+		state = STATE4;
+		not_found = 0;
 	      }
-	    ebs.right.x = gap;
-	    ebs.left.x = gap;
-	  }
-
-	//test = test + ros::Time::now().toSec();
-	//cout << "test:"<<test<<endl;
-	fps = 1./ros::Duration(now_time-former_time).toSec();
-	cout << "now state: "<<state<<endl;
-	cout << "Duration(now-former):"<<ros::Duration(now_time-former_time).toSec()<<endl;	
-	cout << "count_time[0]:"<<count_time[0]<<", count_time[1]:"<<count_time[1]<<endl;
-	cout << "threshold_time[0]:"<<threshold_time[0]<<", threshold_time[1]:"<<threshold_time[1]<<endl;
-	cout << "fps:"<< fps <<endl;
-
-	if(msg->human[i].face.persons.size())
-	  {
-	    ebs.name = msg->human[i].face.persons[0].name;
-	    ebs.okao_id = msg->human[i].face.persons[0].okao_id;
+	    
+	    ebs.right.x = 200*sin(not_found*10*M_PI/180.);
+	    ebs.left.x =  200*sin(not_found*10*M_PI/180.);
+	    
+	    ++not_found;
 	  }
       }
     former_time = ros::Time::now().toSec();
