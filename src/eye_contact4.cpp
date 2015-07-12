@@ -1,5 +1,7 @@
 /*
 2015.7.10
+自律的なベース動作に対応する
+
 RosAriaに回転動作も加える
 
 2015.7.6
@@ -263,12 +265,12 @@ public:
     cout << "ebs fps:"<<ebs.fps<<endl;
     ebs.header.stamp = ros::Time::now();
     cout << "torf:"<<blink_torf<<endl;
+
+    //まばたき検出時のみまばたき
     if(blink_torf == 0)
       ebs.blink = 0;
-    else if(blink_torf == 1)
+    else 
       ebs.blink = 1;
-    else
-      ebs.blink = GetRandom(0, 39);
     
     eye_pub.publish( ebs );
   }
