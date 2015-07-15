@@ -1,4 +1,10 @@
 /*
+2915.7.15
+move_baseのようにnamespaseを使ってみた
+メソッドを定義
+
+別スレッドで動かす
+
 2015.7.13
 
 move_base経由でRosAriaに回転動作も加える
@@ -20,29 +26,8 @@ STATE1のとき、人物が見ている方向に目を向ける
 using eyeballs_msgs
 */
 
-#include <ros/ros.h>
-#include <iostream>
+#include "eye_contact.h"
 
-#include "humans_msgs/Humans.h"
-#include "eyeballs_msgs/Eyeballs.h"
-#include "nav_msgs/Odometry.h"
-
-//#include "geometry_msgs/Transform.h"
-//#include <bullet/btQuaternion.h>
-//#include "LinearMath/btTransform.h"
-#include "tf/tf.h"
-//#include <geometry_msgs/Quaternion.h>
-//#include <geometry_msgs/Transform.h>
-
-//#include "tf/transform_broadcaster.h"
-//#include "tf/transform_listener.h"
-
-#include <boost/thread.hpp>
-
-#include <fstream>
-#include <functional>
-#include <algorithm>
-#include <numeric>
 
 #define STATE1 1
 #define STATE2 2
@@ -51,62 +36,35 @@ using eyeballs_msgs
 
 using namespace std;
 
-class EyeContact
-{
-private:
-  ros::NodeHandle nh;
-  ros::Subscriber eye_sub;
-  ros::Publisher eye_pub, vel_pub;
-  eyeballs_msgs::Eyeballs ebs;
+namespace eye_contact {
 
-  boost::thread* move_thread;
 
-  vector<int> point_buff;
-  int queue_size;
-  int tolerance;
-  int conf_th;
-  int contact_count;
-  int img_width;
-  int img_height;
-  //現在目が合っているかどうか判定
-  bool contact_state;
-  int gap;
 
-  double count_time[3];
-  double threshold_time[3];
-  double tm_param[2];
-  double test,fps;
-
-  stringstream file_name;
-  int state;
-  double former_time, now_time;
-
-  int micro_motion;
-  int look_motion;
-  int blink_torf;
-  int not_found;
-  //ofstream ofs;
-
-public:
-  EyeContact()
+  EyeContact:: EyeContact()
   {   
-    state = STATE4; 
+    state = STATE1; 
+    move_state = false;
     contact_count = 0;
-
+    contact_state = false;
     queue_size = 10;
 
     count_time[0] = 0;
     count_time[1] = 0;
     count_time[2] = 0;
-    tm_param[0] = 2.0;
-    tm_param[1] = 0.5;
-    tm_param[2] = 4.0;
+    count_time[3] = 0;
+    tm_param[0] = 3.0;
+    tm_param[1] = 2.5;
+    tm_param[2] = 0.5;
+    tm_param[3] = 6.0;
+
     //見つめる時間
     threshold_time[0] = ros::Duration(tm_param[0]).toSec();
     //目をそらす時間
     threshold_time[1] = ros::Duration(tm_param[1]).toSec();
-    //相手の視線の向きに目を向ける時間
+    //相手に体を向ける時間
     threshold_time[2] = ros::Duration(tm_param[2]).toSec();
+    //相手の視線の向きに体を向ける時間
+    threshold_time[3] = ros::Duration(tm_param[3]).toSec();
 
     for(int i = 0; i < queue_size; ++i)
       point_buff.push_back(0);
@@ -130,17 +88,18 @@ public:
     move_thread = new boost::thread(boost::bind(&EyeContact::moveThread, this));
     //for comanding the base
     vel_pub = nh.advertise<geometry_msgs::Twist>("/RosAria/cmd_vel", 1);
-
+    
     former_time = ros::Time::now().toSec();
   }
-  ~EyeContact()
+  
+  EyeContact::~EyeContact()
   {
     move_thread->interrupt();
     move_thread->join();
     delete move_thread;
   }
 
-  void Callback(const humans_msgs::HumansConstPtr& msg)
+  void EyeContact::Callback(const humans_msgs::HumansConstPtr& msg)
   {
     now_time = ros::Time::now().toSec();
 
@@ -165,33 +124,27 @@ public:
 	    int face_width = abs(msg->human[i].face.position.rt.x - msg->human[i].face.position.lt.x);
 	    gap = face_right_and_left_check(msg->human[i].face.position.rt.x - face_width/2);
 
-	    //現在のアイコンタクト状態判定および瞳の動き設定
-	    eyecontact_check(state);
-
 	    //名前とIDののセット
 	    name_and_id_check(msg->human[i].face.persons);
-       
-	    //各種表示
-	    fps = 1./ros::Duration(now_time-former_time).toSec();
-	    /*
-	    cout << "now state: "<<state<<endl;
-	    cout << "Duration(now-former):"<<ros::Duration(now_time-former_time).toSec()<<endl;	
-	    cout << "count_time[0]:"<<count_time[0]
-		 <<", count_time[1]:"<<count_time[1]
-		 <<", count_time[2]:"<<count_time[2]<<endl;
-	    cout << "threshold_time[0]:"<<threshold_time[0]
-		 <<", threshold_time[1]:"<<threshold_time[1]
-		 <<", threshold_time[2]:"<<threshold_time[2]<<endl;
-	    cout << "fps:"<< fps <<endl;
-	    */
-	  }
-	else
-	  {
-	    ROS_ERROR("face not found");
-	    //顔が見つからなかった場合の瞳の動き設定
-	    face_not_found_case(state);
 
 	  }
+
+	//現在のアイコンタクト状態判定および瞳の動き設定
+	eyecontact_check(state);
+		
+	//各種表示
+	fps = 1./ros::Duration(now_time-former_time).toSec();
+	
+	  cout << "now state: "<<state<<endl;
+	  cout << "Duration(now-former):"<<ros::Duration(now_time-former_time).toSec()<<endl;	
+	  cout << "count_time[0]:"<<count_time[0]
+	  <<", count_time[1]:"<<count_time[1]
+	  <<", count_time[2]:"<<count_time[2]<<endl;
+	  cout << "threshold_time[0]:"<<threshold_time[0]
+	  <<", threshold_time[1]:"<<threshold_time[1]
+	  <<", threshold_time[2]:"<<threshold_time[2]<<endl;
+	  cout << "fps:"<< fps <<endl;
+	
       }
 
     former_time = ros::Time::now().toSec();
@@ -205,7 +158,7 @@ public:
     eye_pub.publish( ebs );
   }
 
-  void micro_motion_switch(int now_micro_motion)
+  void EyeContact::micro_motion_switch(int now_micro_motion)
   {
     if( now_micro_motion > 0)
       micro_motion = -3;
@@ -213,7 +166,7 @@ public:
       micro_motion = 3;
   }
 
-  int blink_check(vector<humans_msgs::DegConf> open_level)
+  int EyeContact::blink_check(vector<humans_msgs::DegConf> open_level)
   {
     if(open_level.size())
       {
@@ -241,7 +194,7 @@ public:
       }
   }
 
-  bool contact_check(humans_msgs::Direction dir, humans_msgs::XYConf gaze_dir)
+  bool EyeContact::contact_check(humans_msgs::Direction dir, humans_msgs::XYConf gaze_dir)
   {
     int dir_horizon = dir.x;
     int gaze_horizon = gaze_dir.x;
@@ -273,8 +226,8 @@ public:
 	return false;
       }
   } 
-  
-  int face_right_and_left_check(int right_or_left)
+
+  int EyeContact::face_right_and_left_check(int right_or_left)
   { 
     if(right_or_left > img_width/2)
       {
@@ -288,81 +241,112 @@ public:
       }
   }
 
-  void eyecontact_check(int now_state)
+  void EyeContact::eyecontact_check(int now_state)
   {
+    double diff = ros::Duration(now_time-former_time).toSec();
     //状態遷移
-    if(now_state == STATE1 || now_state == STATE4)
+    switch (now_state)
       {
+      case 1:
+      //アイコンタクト成立ならstate2へ
 	if(contact_state)
 	  {
 	    state = STATE2;
-	    count_time[2] = 0;
+	    count_time[0] = 0;
 	  }
 	else
 	  {
 	    //ここで相手の視線方向を見たり、相手の方を見たりする
-	    count_time[2] = count_time[2] + ros::Duration(now_time-former_time).toSec();
-	    if( count_time[2] < threshold_time[2] )
+	    count_time[0] = count_time[0] + diff;
+	    if( count_time[0] > threshold_time[0] )
 	      {
-		
-	      }
-	    else if(count_time[2] > threshold_time[2] && count_time[2] < (threshold_time[1] + threshold_time[2]) )
-	      {
-		look_motion = micro_motion;
+		state = STATE4;	
+		move_state = true;
+		count_time[0] = 0;
 	      }
 	    else
 	      {
-		count_time[2] = 0;
+		state = STATE1;
 	      }
-	    state = STATE1;
-	    ebs.right.x = look_motion+micro_motion;
-	    ebs.left.x = look_motion+micro_motion;
+	    ebs.right.x = micro_motion;
+	    ebs.left.x = micro_motion;
 	  }  
-      }
-    else if(now_state == STATE2)
-      {
-	//state2になったときに目をそらす時間count_time[1]はリセット。
-	//見つめる時間count_time[0]はインクリメント
-	count_time[1] = 0;
-	count_time[0] = count_time[0] + ros::Duration(now_time-former_time).toSec();
+      break;
+
+      case 2:
+
 	if( !contact_state )
-	  state = STATE1;
+	  {
+	    state = STATE1;
+	    count_time[1] = 0;
+	  }
 	else
 	  {
-	    if( count_time[0] > threshold_time[0] )
-	      state = STATE3;
+	    count_time[1] = count_time[1] + diff;
+	    if( count_time[1] > threshold_time[1] )
+	      {
+		state = STATE3;
+		count_time[1] = 0;
+	      }
 	    else
-	      state = STATE2;
+	      {
+		state = STATE2;
+	      }
 	  }
 	ebs.right.x = micro_motion;
 	ebs.left.x = micro_motion;
-      }
-    else if(now_state == STATE3)
-      {
-	count_time[0] = 0;
-	count_time[1] = count_time[1] + ros::Duration(now_time-former_time).toSec();
-	
+	break;
+      
+      case 3:
+	double deci, inte;
 	if( !contact_state )
-	  state = STATE1;
+	  {
+	    state = STATE1;
+	    count_time[2] = 0;
+	  }
 	else
 	  {
-	    if( count_time[1] > threshold_time[1] )
-	      state = STATE2;
+	    count_time[2] = count_time[2] + diff;
+	    if( count_time[2] > threshold_time[2] )
+	      {
+		state = STATE2;
+		count_time[2] = 0;
+	      }
 	    else
-	      state = STATE3;
+	      {
+		state = STATE3;
+	      }
 	  }
 	ebs.right.x = gap + micro_motion;
 	ebs.left.x = gap + micro_motion;
 	//見つめる時間の変更
-	double deci = 0.1*GetRandom(0,9);
-	double inte = GetRandom(1,4);
-	tm_param[0] = inte + deci;
-	threshold_time[0] =  ros::Duration(tm_param[0]).toSec();
+	deci = 0.1*GetRandom(0,9);
+	inte = GetRandom(1,4);
+	tm_param[1] = inte + deci;
+	threshold_time[1] =  ros::Duration(tm_param[1]).toSec();
+	break;
+
+      case 4:
+	
+	count_time[3] = count_time[3] + diff;
+	if( count_time[3] > threshold_time[3] )
+	  {
+	    state = STATE1;
+	    move_state = true;	
+	    count_time[3] = 0;
+	  }
+	else
+	  {
+	    state = STATE4;
+	  }
+	ebs.right.x = micro_motion;
+	ebs.left.x = micro_motion;
+	break;
+
       }
-    
   }
 
-  void name_and_id_check(vector<humans_msgs::Person> persons)
+  void EyeContact::name_and_id_check(vector<humans_msgs::Person> persons)
   {
     if(persons.size())
       {
@@ -376,7 +360,8 @@ public:
       }
   }
 
-  void face_not_found_case(int now_state)
+
+  void EyeContact::face_not_found_case(int now_state)
   {
     if(state != STATE4)
       {
@@ -384,20 +369,20 @@ public:
 	not_found = 0;
       }
     
-    ebs.right.x = 200*sin(not_found*10*M_PI/180.);
-    ebs.left.x =  200*sin(not_found*10*M_PI/180.);
-    //ebs.right.x = look_motion+micro_motion;
-    //ebs.left.x = look_motion+micro_motion;
+    //ebs.right.x = 200*sin(not_found*10*M_PI/180.);
+    //ebs.left.x =  200*sin(not_found*10*M_PI/180.);
+    ebs.right.x = micro_motion;
+    ebs.left.x = micro_motion;
     cout << "not_found:"<<not_found <<endl;
     ++not_found;
   }
 
-  int GetRandom(int min, int max)
+  int EyeContact::GetRandom(int min, int max)
   {
     return min + (int)(rand()*(max-min+1.0)/(1.0+RAND_MAX));
   }
 
-  int PointEyeContactDirAndGaze(int f_horizon, int g_horizon, int f_conf, int g_conf)
+  int EyeContact::PointEyeContactDirAndGaze(int f_horizon, int g_horizon, int f_conf, int g_conf)
   {
     //cout <<"horizon:" <<horizon << ", conf:"<< conf<< endl;
     int diagonally_point = queue_size/3;
@@ -424,7 +409,7 @@ public:
       return zero_point;
   }
 
-  int EyeContactDirAndGaze(int f_horizon, int g_horizon, int f_conf, int g_conf)
+  int EyeContact::EyeContactDirAndGaze(int f_horizon, int g_horizon, int f_conf, int g_conf)
   {
     //cout <<"horizon:" <<horizon << ", conf:"<< conf<< endl;
     int diagonally_point = queue_size/3;
@@ -443,39 +428,49 @@ public:
       return zero_point;
   }
 
-  //動作部
-  void moveThread()
-  {
-  
+ //動作部
+  void EyeContact::moveThread()
+  { 
     ros::NodeHandle nmv;
     while(nmv.ok())
       {
+	//cout << "move_thread now_state:"<<state<<endl;
 	//サブスクライブ
 	nav_msgs::OdometryConstPtr now_odom =
 	  ros::topic::waitForMessage<nav_msgs::Odometry>("/RosAria/pose");
-	cout << "odom:" << now_odom->pose.pose.orientation <<endl;
-	if(state==STATE1)
-	  {
-
+	//cout << "odom:" << now_odom->pose.pose.orientation <<endl;
+	if( move_state )
+	  { 
 	    geometry_msgs::Twist cmd_vel;
-	    cmd_vel.linear.x = 0.0;
-	    cmd_vel.linear.y = 0.0;
-	    cmd_vel.angular.z = 90.*M_PI/180.;
-
-	    double yaw;
-	    GetYaw(now_odom->pose.pose.orientation, yaw);
-	    cout << "now_goal[deg]:" << cmd_vel.angular.z*180./M_PI <<endl;
-	    cout << "now_yaw[deg]:" << yaw*180/M_PI <<endl;
-	    cout << "fabs(yaw -goal)[deg]:"<< fabs(yaw - cmd_vel.angular.z)*180./M_PI << endl;
+	    if(state==STATE1)
+	      {
+		cmd_vel.linear.x = 0.0;
+		cmd_vel.linear.y = 0.0;
+		cmd_vel.angular.z = 0.*M_PI/180.;	      
+	      }
+	    else if(state==STATE4)
+	      {
+		cmd_vel.linear.x = 0.0;
+		cmd_vel.linear.y = 0.0;
+		cmd_vel.angular.z = 90.*M_PI/180.;	
+	      }
+	    //geometry_msgs::Quaternion qu;
+	    //qu.z = 0.25881904510252074;
+	    //qu.w = 0.9659258262890683;
+	    double roll, pitch, yaw;
+	    GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
+	    cout << "stop fabs(yaw -goal)[deg]:" << endl;
 	    if(fabs(yaw - cmd_vel.angular.z) < 10.*M_PI/180.)
 	      {
 		//cout << "stop fabs(yaw -goal)[deg]:" << endl;
 		publishZeroVelocity();
+		move_state = false;
 	      }
 	    else
-	      vel_pub.publish(cmd_vel);
-	    //ここで比較をおこない、目的の回転角との誤差が小さくなったら停止する
-	  }
+	      {
+		vel_pub.publish(cmd_vel);
+	      }
+	  }	
 	else
 	  {
 	    publishZeroVelocity();
@@ -483,28 +478,30 @@ public:
       }
   }
 
- void GetYaw(const geometry_msgs::Quaternion &q, double &yaw)
+  void EyeContact::GetRPY(const geometry_msgs::Quaternion &q,double &roll,double &pitch,double &yaw)
   {
-    yaw = atan2(2*q.y*q.w-2*q.x*q.z , 1 - 2*q.y*q.y - 2*q.z*q.z);
+    tf::Quaternion btq(q.x,q.y,q.z,q.w);
+    tf::Matrix3x3(btq).getRPY(roll, pitch, yaw);
   }
+  
 
-
-  void publishZeroVelocity()
+  void EyeContact::publishZeroVelocity()
   {
     geometry_msgs::Twist cmd_vel;
     cmd_vel.linear.x = 0.0;
     cmd_vel.linear.y = 0.0;
     cmd_vel.angular.z = 0.0;
-    vel_pub.publish(cmd_vel);
+    //vel_pub.publish(cmd_vel);
   }
 
 };
+
 
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "eye_contact");
   
-  EyeContact ec;
+  eye_contact::EyeContact ec;
   
   ros::spin();
   return 0;
