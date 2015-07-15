@@ -27,6 +27,16 @@ using eyeballs_msgs
 #include "eyeballs_msgs/Eyeballs.h"
 #include "nav_msgs/Odometry.h"
 
+//#include "geometry_msgs/Transform.h"
+//#include <bullet/btQuaternion.h>
+//#include "LinearMath/btTransform.h"
+#include "tf/tf.h"
+//#include <geometry_msgs/Quaternion.h>
+//#include <geometry_msgs/Transform.h>
+
+//#include "tf/transform_broadcaster.h"
+//#include "tf/transform_listener.h"
+
 #include <boost/thread.hpp>
 
 #include <fstream>
@@ -443,6 +453,22 @@ public:
 	    nav_msgs::OdometryConstPtr now_odom =
 	      ros::topic::waitForMessage<nav_msgs::Odometry>("/RosAria/pose");
 	    cout << "odom:" << now_odom->pose.pose.orientation <<endl;
+
+	    geometry_msgs::Twist cmd_vel;
+	    cmd_vel.linear.x = 0.0;
+	    cmd_vel.linear.y = 0.0;
+	    cmd_vel.angular.z = 90.*M_PI/180.;
+
+	    double yaw;
+	    GetYaw(now_odom->pose.pose.orientation, yaw);
+	    cout << "yaw:" << yaw <<endl;
+	    if(fabs(yaw - cmd_vel.angular.z) < 10.*M_PI/180.)
+	      {
+		publishZeroVelocity();
+	      }
+	    else
+	      vel_pub.publish(cmd_vel);
+	    //ここで比較をおこない、目的の回転角との誤差が小さくなったら停止する
 	  }
 	else
 	  {
@@ -450,6 +476,15 @@ public:
 	  }	
       }
   }
+
+ void GetYaw(const geometry_msgs::Quaternion &q, double &yaw)
+  {
+    //btQuaternion btq(q.x,q.y,q.z,q.w);
+    //geometry::btQuaternion btquat(q.x,q.y,q.z,q.w);   
+    //tf::Matrix3x3(btqat).getRPY(roll, pitch, yaw);
+    yaw = atan2(2*q.y*q.w-2*q.x*q.z , 1 - 2*q.y*q.y - 2*q.z*q.z);
+  }
+
 
   void publishZeroVelocity()
   {
