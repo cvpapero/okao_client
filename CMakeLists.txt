@@ -16,6 +16,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   visualization_msgs
   camera_info_manager
+  move_base_msgs
+  actionlib
 )
 find_package(OpenCV REQUIRED)
 ## System dependencies are found with CMake's conventions
@@ -201,9 +203,7 @@ target_link_libraries(recog_info_vision ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
 
 #サブモジュール
-add_executable(eye_contact4_1 src/eye_contact4_1.cpp)
-target_link_libraries(eye_contact4_1 ${catkin_LIBRARIES})
+add_executable(eye_contact5 src/eye_contact5.cpp)
+target_link_libraries(eye_contact5 ${catkin_LIBRARIES})
 
-add_executable(test_robot_control src/test_robot_control.cpp)
-target_link_libraries(test_robot_control ${catkin_LIBRARIES})
 

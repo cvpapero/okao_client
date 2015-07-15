@@ -1,4 +1,7 @@
 /*
+2015.7.14
+actionlibを使ってゴールの指定
+
 2015.7.13
 
 move_base経由でRosAriaに回転動作も加える
@@ -26,6 +29,10 @@ using eyeballs_msgs
 #include "humans_msgs/Humans.h"
 #include "eyeballs_msgs/Eyeballs.h"
 
+#include <ros/ros.h>
+#include <move_base_msgs/MoveBaseAction.h>
+#include <actionlib/client/simple_action_client.h>
+
 #include <fstream>
 #include <functional>
 #include <algorithm>
@@ -37,6 +44,8 @@ using eyeballs_msgs
 #define STATE4 4
 
 using namespace std;
+
+typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
 class EyeContact
 {
@@ -71,10 +80,18 @@ private:
   int blink_torf;
   int not_found;
   //ofstream ofs;
+  move_base_msgs::MoveBaseGoal goal;
 
 public:
   EyeContact()
   {   
+
+    MoveBaseClient ac("move_base", true);
+    while(!ac.waitForServer(ros::Duration(5.0)))
+      {
+	ROS_INFO("Waiting for the move_base action server to come up");
+      }
+
     state = STATE1; 
     contact_count = 0;
 

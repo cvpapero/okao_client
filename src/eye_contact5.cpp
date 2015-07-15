@@ -25,6 +25,9 @@ using eyeballs_msgs
 
 #include "humans_msgs/Humans.h"
 #include "eyeballs_msgs/Eyeballs.h"
+#include "nav_msgs/Odometry.h"
+
+#include <boost/thread.hpp>
 
 #include <fstream>
 #include <functional>
@@ -43,8 +46,10 @@ class EyeContact
 private:
   ros::NodeHandle nh;
   ros::Subscriber eye_sub;
-  ros::Publisher eye_pub;
+  ros::Publisher eye_pub, vel_pub;
   eyeballs_msgs::Eyeballs ebs;
+
+  boost::thread* move_thread;
 
   vector<int> point_buff;
   int queue_size;
@@ -110,11 +115,19 @@ public:
 			   &EyeContact::Callback, this);
 
     eye_pub = nh.advertise<eyeballs_msgs::Eyeballs>("/humans/eye_contact", 1);
+
+    //set up the move thread
+    move_thread = new boost::thread(boost::bind(&EyeContact::moveThread, this));
+    //for comanding the base
+    vel_pub = nh.advertise<geometry_msgs::Twist>("/RosAria/cmd_vel", 1);
+
     former_time = ros::Time::now().toSec();
   }
   ~EyeContact()
   {
-
+    move_thread->interrupt();
+    move_thread->join();
+    delete move_thread;
   }
 
   void Callback(const humans_msgs::HumansConstPtr& msg)
@@ -415,6 +428,36 @@ public:
       }
     else 
       return zero_point;
+  }
+
+  //動作部
+  void moveThread()
+  {
+  
+    ros::NodeHandle nmv;
+    while(nmv.ok())
+      {
+	if(state==STATE1)
+	  {
+	    //サブスクライブ
+	    nav_msgs::OdometryConstPtr now_odom =
+	      ros::topic::waitForMessage<nav_msgs::Odometry>("/RosAria/pose");
+	    cout << "odom:" << now_odom->pose.pose.orientation <<endl;
+	  }
+	else
+	  {
+	    publishZeroVelocity();
+	  }	
+      }
+  }
+
+  void publishZeroVelocity()
+  {
+    geometry_msgs::Twist cmd_vel;
+    cmd_vel.linear.x = 0.0;
+    cmd_vel.linear.y = 0.0;
+    cmd_vel.angular.z = 0.0;
+    vel_pub.publish(cmd_vel);
   }
 
 };
