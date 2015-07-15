@@ -90,7 +90,7 @@ private:
 public:
   EyeContact()
   {   
-    state = STATE1; 
+    state = STATE4; 
     contact_count = 0;
 
     queue_size = 10;
@@ -173,6 +173,7 @@ public:
        
 	    //各種表示
 	    fps = 1./ros::Duration(now_time-former_time).toSec();
+	    /*
 	    cout << "now state: "<<state<<endl;
 	    cout << "Duration(now-former):"<<ros::Duration(now_time-former_time).toSec()<<endl;	
 	    cout << "count_time[0]:"<<count_time[0]
@@ -182,6 +183,7 @@ public:
 		 <<", threshold_time[1]:"<<threshold_time[1]
 		 <<", threshold_time[2]:"<<threshold_time[2]<<endl;
 	    cout << "fps:"<< fps <<endl;
+	    */
 	  }
 	else
 	  {
@@ -197,7 +199,7 @@ public:
     ebs.fps = fps;
     
     ebs.header.stamp = ros::Time::now();
-    cout <<"blink:"<<blink_torf<<endl;
+    //cout <<"blink:"<<blink_torf<<endl;
     ebs.blink = blink_torf;
 
     eye_pub.publish( ebs );
@@ -252,15 +254,16 @@ public:
     else
       look_motion = 150;    
 
+    /*
     cout <<"face:" << dir_horizon <<", gaze:" << gaze_horizon 
 	 << ", face_conf:"<< dir_conf << ", gaze_conf:"<< gaze_conf << endl;
-    
+    */
     point_buff.push_back(EyeContactDirAndGaze(dir_horizon, gaze_horizon, dir_conf, gaze_conf));
     point_buff.erase(point_buff.begin());
     
 
     int point_sum = accumulate(point_buff.begin(), point_buff.end(), 0);
-    cout << "point_sum:" << point_sum << endl;
+    //cout << "point_sum:" << point_sum << endl;
     if( point_sum > queue_size/2)
       {
 	return true;
@@ -275,12 +278,12 @@ public:
   { 
     if(right_or_left > img_width/2)
       {
-	cout << "face left" << endl;
+	//cout << "face left" << endl;
 	return 150;
       }
     else
       {
-	cout << "face right" << endl;
+	//cout << "face right" << endl;
 	return -150;
       }
   }
@@ -447,12 +450,12 @@ public:
     ros::NodeHandle nmv;
     while(nmv.ok())
       {
+	//サブスクライブ
+	nav_msgs::OdometryConstPtr now_odom =
+	  ros::topic::waitForMessage<nav_msgs::Odometry>("/RosAria/pose");
+	cout << "odom:" << now_odom->pose.pose.orientation <<endl;
 	if(state==STATE1)
 	  {
-	    //サブスクライブ
-	    nav_msgs::OdometryConstPtr now_odom =
-	      ros::topic::waitForMessage<nav_msgs::Odometry>("/RosAria/pose");
-	    cout << "odom:" << now_odom->pose.pose.orientation <<endl;
 
 	    geometry_msgs::Twist cmd_vel;
 	    cmd_vel.linear.x = 0.0;
@@ -461,9 +464,12 @@ public:
 
 	    double yaw;
 	    GetYaw(now_odom->pose.pose.orientation, yaw);
-	    cout << "yaw:" << yaw <<endl;
+	    cout << "now_goal[deg]:" << cmd_vel.angular.z*180./M_PI <<endl;
+	    cout << "now_yaw[deg]:" << yaw*180/M_PI <<endl;
+	    cout << "fabs(yaw -goal)[deg]:"<< fabs(yaw - cmd_vel.angular.z)*180./M_PI << endl;
 	    if(fabs(yaw - cmd_vel.angular.z) < 10.*M_PI/180.)
 	      {
+		//cout << "stop fabs(yaw -goal)[deg]:" << endl;
 		publishZeroVelocity();
 	      }
 	    else
@@ -479,9 +485,6 @@ public:
 
  void GetYaw(const geometry_msgs::Quaternion &q, double &yaw)
   {
-    //btQuaternion btq(q.x,q.y,q.z,q.w);
-    //geometry::btQuaternion btquat(q.x,q.y,q.z,q.w);   
-    //tf::Matrix3x3(btqat).getRPY(roll, pitch, yaw);
     yaw = atan2(2*q.y*q.w-2*q.x*q.z , 1 - 2*q.y*q.y - 2*q.z*q.z);
   }
 
