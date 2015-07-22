@@ -171,7 +171,7 @@ namespace eye_contact {
 	//各種表示
 	fps = 1./ros::Duration(now_time-former_time).toSec();
 	
-	cout << "now state: "<<state<<endl;
+	cout << "now state: "<<state<< "persons.size:" << msg->human.size() << endl;
 	  /*
 	  cout << "Duration(now-former):"<<ros::Duration(now_time-former_time).toSec()<<endl;	
 	  cout << "count_time[0]:"<<count_time[0]
@@ -266,7 +266,8 @@ namespace eye_contact {
 
   void EyeContact::contact_check_noface(humans_msgs::Direction dir, humans_msgs::XYConf gaze_dir)
   {
-    point_buff.push_back(EyeContactDirAndGaze(dir.x, gaze_dir.x, dir.conf, gaze_dir.conf));
+    cout << "noface" << endl;
+    point_buff.push_back(EyeContactDirAndGaze(0, 0, 0, 0));
     point_buff.erase(point_buff.begin());
   }
 
