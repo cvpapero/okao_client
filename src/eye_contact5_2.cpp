@@ -508,21 +508,21 @@ namespace eye_contact {
 	      {
 
 		goal.orientation = origin_quat;//tf::createQuaternionMsgFromYaw(0.*M_PI/180.);
-		cmd_vel.angular.z = -1*(dir_horizon+90)/3*M_PI/180.;
+		cmd_vel.angular.z = -1*(dir_horizon)/3*M_PI/180.;
 
 	      }
 	    else if(state==STATE4)
 	      {
 
-		goal.orientation = tf::createQuaternionMsgFromYaw(dir_horizon+90*M_PI/180.);
-		cmd_vel.angular.z = (dir_horizon+90)/3*M_PI/180.;
+		goal.orientation = tf::createQuaternionMsgFromYaw(dir_horizon*M_PI/180.);
+		cmd_vel.angular.z = (dir_horizon)/3*M_PI/180.;
 
 	      }
 	    
-	    cout << "yaw [deg]:"<< yaw*180./M_PI << endl;
-	    cout << "cmd.z [deg]:"<< cmd_vel.angular.z*180./M_PI << endl;
-	    cout << "yaw - cmd_vel.angular.z [deg]:" << fabs(yaw-cmd_vel.angular.z)*180./M_PI << endl;
-	    //cout << "state1_back:" << state1_back << endl;
+	    //cout << "yaw [deg]:"<< yaw*180./M_PI << endl;
+	    //cout << "cmd.z [deg]:"<< cmd_vel.angular.z*180./M_PI << endl;
+	    //cout << "yaw - cmd_vel.angular.z [deg]:" << fabs(yaw-cmd_vel.angular.z)*180./M_PI << endl;
+	    ROS_INFO("dir_h:%d",dir_horizon);
 
 	    if(qtRoughlyEq(now_odom->pose.pose.orientation, goal.orientation))
 	      {	    
