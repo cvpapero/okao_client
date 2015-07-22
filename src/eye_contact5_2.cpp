@@ -504,8 +504,9 @@ namespace eye_contact {
 	    geometry_msgs::Twist cmd_vel;
 	    
 
-	    if(!dir_horizon)
-	      rot = dir_horizon+90;
+	    if(dir_horizon)
+	      rot = -1*(dir_horizon+90);
+
 	    //この関数は処理に使ってない...
 	    GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
 	    
@@ -513,14 +514,14 @@ namespace eye_contact {
 	      {
 
 		goal.orientation = origin_quat;//tf::createQuaternionMsgFromYaw(0.*M_PI/180.);
-		cmd_vel.angular.z = -1*(rot)/3*M_PI/180.;
+		cmd_vel.angular.z = -1*(rot/3.)*(M_PI/180.);
 
 	      }
 	    else if(state==STATE4)
 	      {
 
 		goal.orientation = tf::createQuaternionMsgFromYaw(rot*M_PI/180.);
-		cmd_vel.angular.z = rot/3*M_PI/180.;
+		cmd_vel.angular.z = (rot/3.)*(M_PI/180.);
 
 	      }
 	    
