@@ -162,7 +162,7 @@ namespace eye_contact {
 	    humans_msgs::XYConf gaze_dir;
 	    dir.conf = 0;
 	    gaze_dir.conf = 0;
-	    contact_state = contact_check(dir, gaze_dir);
+	    contact_check_noface(dir, gaze_dir);
 	  }
 
 	//現在のアイコンタクト状態判定および瞳の動き設定
@@ -263,6 +263,12 @@ namespace eye_contact {
 	return false;
       }
   } 
+
+  void EyeContact::contact_check_noface(humans_msgs::Direction dir, humans_msgs::XYConf gaze_dir)
+  {
+    point_buff.push_back(EyeContactDirAndGaze(dir.x, gaze_dir.x, dir.conf, gaze_dir.conf));
+    point_buff.erase(point_buff.begin());
+  }
 
   int EyeContact::face_right_and_left_check(int right_or_left)
   { 

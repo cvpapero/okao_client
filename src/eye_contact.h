@@ -34,6 +34,8 @@ namespace eye_contact {
 
     bool contact_check(humans_msgs::Direction dir, humans_msgs::XYConf gaze_dir);
 
+    void contact_check_noface(humans_msgs::Direction dir, humans_msgs::XYConf gaze_dir);
+
     int face_right_and_left_check(int right_or_left);
 
     void eyecontact_check(int now_state);
