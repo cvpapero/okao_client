@@ -504,8 +504,12 @@ namespace eye_contact {
 	    geometry_msgs::Twist cmd_vel;
 	    
 
-	    if(dir_horizon)
+	    if(dir_horizon > 0)
 	      rot = -1*(dir_horizon+90);
+	    else if(dir_horizon < 0)
+	      rot = -1*(dir_horizon-90);
+	    else
+	      rot = 0;
 
 	    //この関数は処理に使ってない...
 	    GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
