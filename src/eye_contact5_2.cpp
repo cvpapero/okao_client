@@ -460,7 +460,7 @@ namespace eye_contact {
     int zero_point = 0;
     if(f_conf>100 && g_conf>100)
       {
-	if(abs(f_horizon) < tolerance && tolerance>abs(abs(abs(f_horizon) - abs(g_horizon))))
+	if(abs(f_horizon) < tolerance)
 	  {
 	    return diagonally_point;
 	  }
@@ -487,6 +487,8 @@ namespace eye_contact {
 
     origin_quat = now_odom->pose.pose.orientation;
 
+    double rot = 0;
+
     while(nmv.ok())
       {
 	//cout << "move_thread now_state:"<<state<<endl;
@@ -501,6 +503,9 @@ namespace eye_contact {
 	  { 
 	    geometry_msgs::Twist cmd_vel;
 	    
+
+	    if(!dir_horizon)
+	      rot = dir_horizon+90;
 	    //この関数は処理に使ってない...
 	    GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
 	    
@@ -508,21 +513,21 @@ namespace eye_contact {
 	      {
 
 		goal.orientation = origin_quat;//tf::createQuaternionMsgFromYaw(0.*M_PI/180.);
-		cmd_vel.angular.z = -1*(dir_horizon)/3*M_PI/180.;
+		cmd_vel.angular.z = -1*(rot)/3*M_PI/180.;
 
 	      }
 	    else if(state==STATE4)
 	      {
 
-		goal.orientation = tf::createQuaternionMsgFromYaw(dir_horizon*M_PI/180.);
-		cmd_vel.angular.z = (dir_horizon)/3*M_PI/180.;
+		goal.orientation = tf::createQuaternionMsgFromYaw(rot*M_PI/180.);
+		cmd_vel.angular.z = rot/3*M_PI/180.;
 
 	      }
 	    
 	    //cout << "yaw [deg]:"<< yaw*180./M_PI << endl;
 	    //cout << "cmd.z [deg]:"<< cmd_vel.angular.z*180./M_PI << endl;
 	    //cout << "yaw - cmd_vel.angular.z [deg]:" << fabs(yaw-cmd_vel.angular.z)*180./M_PI << endl;
-	    ROS_INFO("dir_h:%d",dir_horizon);
+	    ROS_INFO("dir_h:%f",rot);
 
 	    if(qtRoughlyEq(now_odom->pose.pose.orientation, goal.orientation))
 	      {	    
