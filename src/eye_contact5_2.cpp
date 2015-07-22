@@ -8,6 +8,7 @@
 1.このモジュールをローカルで動かすとどうなるか（分散せずに）
 2.amclを使うことでより正確に動けるか
 →最終的にamcl使うのであれば、ここでamclからサブスクライブしていいかもしれない
+3.目標の位置に近づいてきたら速度を落とす（darwinと似た方法）
 
 まずはこの二つで試してみる
 
@@ -90,6 +91,11 @@ namespace eye_contact {
     for(int i = 0; i < queue_size; ++i)
       point_buff.push_back(0);
     
+    dir_horizon = 0;
+    gaze_horizon = 0;
+    dir_conf = 0;
+    gaze_conf = 0;
+
     tolerance = 7;
     conf_th = 100;
 
@@ -227,10 +233,10 @@ namespace eye_contact {
 
   bool EyeContact::contact_check(humans_msgs::Direction dir, humans_msgs::XYConf gaze_dir)
   {
-    int dir_horizon = dir.x;
-    int gaze_horizon = gaze_dir.x;
-    int dir_conf = dir.conf;
-    int gaze_conf = gaze_dir.conf;
+    dir_horizon = dir.x;
+    gaze_horizon = gaze_dir.x;
+    dir_conf = dir.conf;
+    gaze_conf = gaze_dir.conf;
 
     //視線方向のセッティング
     if(dir_horizon > 0)
@@ -466,14 +472,14 @@ namespace eye_contact {
     ros::Rate rate(30);
     bool state1_back = false;
 
-    double origin_angle;
+    geometry_msgs::Quaternion origin_quat;
 
     double roll, pitch, yaw;
     now_odom =
       ros::topic::waitForMessage<nav_msgs::Odometry>("/RosAria/pose");
     GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
 
-    origin_angle = yaw;
+    origin_quat = now_odom->pose.pose.orientation;
 
     while(nmv.ok())
       {
@@ -489,29 +495,22 @@ namespace eye_contact {
 	  { 
 	    geometry_msgs::Twist cmd_vel;
 	    
+	    //この関数は処理に使ってない...
 	    GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
 	    
 	    if(state==STATE1)
 	      {
-		//cmd_vel.linear.x = 0.0;
-		//cmd_vel.linear.y = 0.0;
-		//GetQtFromYaw(goal.orientation, 90.*M_PI/180.);
-		goal.orientation = tf::createQuaternionMsgFromYaw(0.*M_PI/180.);
-		cmd_vel.angular.z = 60.*M_PI/180.;
-		//goal.angular.z = origin_angle + 90.*M_PI/180.;			
-		//if(yaw > cmd_vel.angular.z)
-		  //stop = true;
+
+		goal.orientation = origin_quat;//tf::createQuaternionMsgFromYaw(0.*M_PI/180.);
+		cmd_vel.angular.z = -1*(dir_horizon+90)/3*M_PI/180.;
+
 	      }
 	    else if(state==STATE4)
 	      {
-		//cmd_vel.linear.x = 0.0;
-		//cmd_vel.linear.y = 0.0;
-		//GetQtFromYaw(goal.orientation, -90.*M_PI/180.);
-		goal.orientation = tf::createQuaternionMsgFromYaw(90.*M_PI/180.);
-		cmd_vel.angular.z = -60.*M_PI/180.;
-		//goal.angular.z = origin_angle - 90.*M_PI/180.;
-		//if(yaw < cmd_vel.angular.z)
-		  //  stop = true;
+
+		goal.orientation = tf::createQuaternionMsgFromYaw(dir_horizon+90*M_PI/180.);
+		cmd_vel.angular.z = (dir_horizon+90)/3*M_PI/180.;
+
 	      }
 	    
 	    cout << "yaw [deg]:"<< yaw*180./M_PI << endl;
@@ -524,6 +523,11 @@ namespace eye_contact {
 		ROS_INFO("Stop!");
 		publishZeroVelocity();
 		move_state = false;
+		//初期値の更新
+		if(state==STATE1)
+		  {
+		    origin_quat = now_odom->pose.pose.orientation;
+		  }
 	      }
 	    else
 	      {
@@ -557,8 +561,8 @@ namespace eye_contact {
   */
   bool EyeContact::qtRoughlyEq(geometry_msgs::Quaternion src1, geometry_msgs::Quaternion src2)
   {
-    double tolerance = 0.1;
-    if( (fabs(src1.w - src2.w) < tolerance) &&  (fabs(src1.z - src2.z) < tolerance))
+    double tol = 0.1;
+    if( (fabs(src1.w - src2.w) < tol) &&  (fabs(src1.z - src2.z) < tol))
       {
 	return true;
       }
@@ -568,8 +572,8 @@ namespace eye_contact {
   void EyeContact::publishZeroVelocity()
   {
     geometry_msgs::Twist cmd_vel;
-    cmd_vel.linear.x = 0.0;
-    cmd_vel.linear.y = 0.0;
+    //cmd_vel.linear.x = 0.0;
+    //cmd_vel.linear.y = 0.0;
     cmd_vel.angular.z = 0.0;
     vel_pub.publish(cmd_vel);
   }

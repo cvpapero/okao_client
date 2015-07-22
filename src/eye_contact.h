@@ -79,6 +79,11 @@ namespace eye_contact {
     int img_width;
     int img_height;
 
+    int dir_horizon;
+    int gaze_horizon;
+    int dir_conf;
+    int gaze_conf;
+
     bool contact_state;
     int gap;
     

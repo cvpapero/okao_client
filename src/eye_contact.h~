@@ -53,7 +53,7 @@ namespace eye_contact {
     void GetRPY(const geometry_msgs::Quaternion &q,double &roll,double &pitch,double &yaw);
     void GetTfRPY(const tf::Quaternion btq, double &roll,double &pitch,double &yaw);
 
-    void GetQtFromYaw(const geometry_msgs::Quaternion &q, double yaw);
+    void GetQtFromYaw(const geometry_msgs::Quaternion &quat, double yaw);
 
     bool qtRoughlyEq(geometry_msgs::Quaternion src1, geometry_msgs::Quaternion src2);
 
