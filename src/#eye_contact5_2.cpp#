@@ -1,5 +1,27 @@
 /*
-2915.7.15
+2015.7.22
+問題点をみつける
+なにがネックになっているか
+現在、ロボットが狙った位置で止まらないという問題がある
+回転すればするほど位置がズレる
+
+1.このモジュールをローカルで動かすとどうなるか（分散せずに）
+2.amclを使うことでより正確に動けるか
+→最終的にamcl使うのであれば、ここでamclからサブスクライブしていいかもしれない
+3.目標の位置に近づいてきたら速度を落とす（darwinと似た方法）
+
+まずはこの二つで試してみる
+
+つぎに、人が見ている方向に回転するという課題がある。
+それはどういった課題か。回転の目的位置を任意にするということ
+どういった計算によってそれは成り立つか？
+
+2015.7.21
+回転動作
+
+もしかして、顔を見失った時、state1にする処理、行ってない？
+
+2015.7.15
 move_baseのようにnamespaseを使ってみた
 メソッドを定義
 
@@ -52,7 +74,7 @@ namespace eye_contact {
     count_time[1] = 0;
     count_time[2] = 0;
     count_time[3] = 0;
-    tm_param[0] = 3.0;
+    tm_param[0] = 6.0;
     tm_param[1] = 2.5;
     tm_param[2] = 0.5;
     tm_param[3] = 6.0;
@@ -128,6 +150,15 @@ namespace eye_contact {
 	    name_and_id_check(msg->human[i].face.persons);
 
 	  }
+	else
+	  {
+	    //目が合ったかどうかの判定
+	    humans_msgs::Direction dir;
+	    humans_msgs::XYConf gaze_dir;
+	    dir.conf = 0;
+	    gaze_dir.conf = 0;
+	    contact_state = contact_check(dir, gaze_dir);
+	  }
 
 	//現在のアイコンタクト状態判定および瞳の動き設定
 	eyecontact_check(state);
@@ -135,7 +166,8 @@ namespace eye_contact {
 	//各種表示
 	fps = 1./ros::Duration(now_time-former_time).toSec();
 	
-	  cout << "now state: "<<state<<endl;
+	cout << "now state: "<<state<<endl;
+	  /*
 	  cout << "Duration(now-former):"<<ros::Duration(now_time-former_time).toSec()<<endl;	
 	  cout << "count_time[0]:"<<count_time[0]
 	  <<", count_time[1]:"<<count_time[1]
@@ -144,7 +176,7 @@ namespace eye_contact {
 	  <<", threshold_time[1]:"<<threshold_time[1]
 	  <<", threshold_time[2]:"<<threshold_time[2]<<endl;
 	  cout << "fps:"<< fps <<endl;
-	
+	  */
       }
 
     former_time = ros::Time::now().toSec();
@@ -432,36 +464,65 @@ namespace eye_contact {
   void EyeContact::moveThread()
   { 
     ros::NodeHandle nmv;
-    ros::Rate rate(10.0);
+    ros::Rate rate(30);
+    bool state1_back = false;
+
+    double origin_angle;
+
+    double roll, pitch, yaw;
+    now_odom =
+      ros::topic::waitForMessage<nav_msgs::Odometry>("/RosAria/pose");
+    GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
+
+    origin_angle = yaw;
+
     while(nmv.ok())
       {
 	//cout << "move_thread now_state:"<<state<<endl;
 	//サブスクライブ
-	nav_msgs::OdometryConstPtr now_odom =
+	now_odom =
 	  ros::topic::waitForMessage<nav_msgs::Odometry>("/RosAria/pose");
 	//cout << "odom:" << now_odom->pose.pose.orientation <<endl;
+
+	bool stop = false;
+	geometry_msgs::Pose goal;
 	if( move_state )
 	  { 
 	    geometry_msgs::Twist cmd_vel;
+	    
+	    GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
+	    
 	    if(state==STATE1)
 	      {
-		cmd_vel.linear.x = 0.0;
-		cmd_vel.linear.y = 0.0;
-		cmd_vel.angular.z = 0.*M_PI/180.;	      
+		//cmd_vel.linear.x = 0.0;
+		//cmd_vel.linear.y = 0.0;
+		//GetQtFromYaw(goal.orientation, 90.*M_PI/180.);
+		goal.orientation = tf::createQuaternionMsgFromYaw(0.*M_PI/180.);
+		cmd_vel.angular.z = 60.*M_PI/180.;
+		//goal.angular.z = origin_angle + 90.*M_PI/180.;			
+		//if(yaw > cmd_vel.angular.z)
+		  //stop = true;
 	      }
 	    else if(state==STATE4)
 	      {
-		cmd_vel.linear.x = 0.0;
-		cmd_vel.linear.y = 0.0;
-		cmd_vel.angular.z = 90.*M_PI/180.;	
+		//cmd_vel.linear.x = 0.0;
+		//cmd_vel.linear.y = 0.0;
+		//GetQtFromYaw(goal.orientation, -90.*M_PI/180.);
+		goal.orientation = tf::createQuaternionMsgFromYaw(90.*M_PI/180.);
+		cmd_vel.angular.z = -60.*M_PI/180.;
+		//goal.angular.z = origin_angle - 90.*M_PI/180.;
+		//if(yaw < cmd_vel.angular.z)
+		  //  stop = true;
 	      }
+	    
+	    cout << "yaw [deg]:"<< yaw*180./M_PI << endl;
+	    cout << "cmd.z [deg]:"<< cmd_vel.angular.z*180./M_PI << endl;
+	    cout << "yaw - cmd_vel.angular.z [deg]:" << fabs(yaw-cmd_vel.angular.z)*180./M_PI << endl;
+	    //cout << "state1_back:" << state1_back << endl;
 
-	    double roll, pitch, yaw;
-	    GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
-	    cout << "stop fabs(yaw -goal)[deg]:" << endl;
-	    if(fabs(yaw - cmd_vel.angular.z) < 10.*M_PI/180.)
-	      {
-		//cout << "stop fabs(yaw -goal)[deg]:" << endl;
+	    if(qtRoughlyEq(now_odom->pose.pose.orientation, goal.orientation))
+	      {	    
+		ROS_INFO("Stop!");
 		publishZeroVelocity();
 		move_state = false;
 	      }
@@ -474,22 +535,42 @@ namespace eye_contact {
 	  {
 	    publishZeroVelocity();
 	  }
+      
 	rate.sleep();	
       }
   }
-
+  
   void EyeContact::GetRPY(const geometry_msgs::Quaternion &q,double &roll,double &pitch,double &yaw)
   {
     tf::Quaternion btq(q.x,q.y,q.z,q.w);
     tf::Matrix3x3(btq).getRPY(roll, pitch, yaw);
   }
   
-
+  void EyeContact::GetTfRPY(const tf::Quaternion btq, double &roll,double &pitch,double &yaw)
+  {
+    tf::Matrix3x3(btq).getRPY(roll, pitch, yaw);
+  }
+  /*
+  void EyeContact::GetQtFromYaw(geometry_msgs::Quaternion &quat, double yaw)
+  {
+    quat = tf::createQuaternionMsgFromYaw(yaw);
+  }
+  */
+  bool EyeContact::qtRoughlyEq(geometry_msgs::Quaternion src1, geometry_msgs::Quaternion src2)
+  {
+    double tolerance = 0.1;
+    if( (fabs(src1.w - src2.w) < tolerance) &&  (fabs(src1.z - src2.z) < tolerance))
+      {
+	return true;
+      }
+    return false;
+  }
+  
   void EyeContact::publishZeroVelocity()
   {
     geometry_msgs::Twist cmd_vel;
-    cmd_vel.linear.x = 0.0;
-    cmd_vel.linear.y = 0.0;
+    //cmd_vel.linear.x = 0.0;
+    //cmd_vel.linear.y = 0.0;
     cmd_vel.angular.z = 0.0;
     vel_pub.publish(cmd_vel);
   }

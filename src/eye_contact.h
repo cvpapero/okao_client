@@ -5,6 +5,7 @@
 #include <ros/ros.h>
 #include <iostream>
 #include <tf/tf.h>
+#include <tf/transform_listener.h>
 //#include <tf/LinearMath/Quaternion.h>
 #include "humans_msgs/Humans.h"
 #include "eyeballs_msgs/Eyeballs.h"
@@ -50,6 +51,11 @@ namespace eye_contact {
     void moveThread();
 
     void GetRPY(const geometry_msgs::Quaternion &q,double &roll,double &pitch,double &yaw);
+    void GetTfRPY(const tf::Quaternion btq, double &roll,double &pitch,double &yaw);
+
+    void GetQtFromYaw(const geometry_msgs::Quaternion &quat, double yaw);
+
+    bool qtRoughlyEq(geometry_msgs::Quaternion src1, geometry_msgs::Quaternion src2);
 
     void publishZeroVelocity();
 
@@ -60,9 +66,11 @@ namespace eye_contact {
     ros::Subscriber eye_sub;
     ros::Publisher eye_pub, vel_pub;
     eyeballs_msgs::Eyeballs ebs;
-    
+    nav_msgs::OdometryConstPtr now_odom;
     boost::thread* move_thread;
     
+    tf::TransformListener listener;
+
     std::vector<int> point_buff;
     int queue_size;
     int tolerance;

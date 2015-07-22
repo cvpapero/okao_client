@@ -1,5 +1,9 @@
 /*
-2915.7.15
+2015.7.21
+回転動作
+
+
+2015.7.15
 move_baseのようにnamespaseを使ってみた
 メソッドを定義
 
@@ -136,6 +140,7 @@ namespace eye_contact {
 	fps = 1./ros::Duration(now_time-former_time).toSec();
 	
 	  cout << "now state: "<<state<<endl;
+	  /*
 	  cout << "Duration(now-former):"<<ros::Duration(now_time-former_time).toSec()<<endl;	
 	  cout << "count_time[0]:"<<count_time[0]
 	  <<", count_time[1]:"<<count_time[1]
@@ -144,7 +149,7 @@ namespace eye_contact {
 	  <<", threshold_time[1]:"<<threshold_time[1]
 	  <<", threshold_time[2]:"<<threshold_time[2]<<endl;
 	  cout << "fps:"<< fps <<endl;
-	
+	  */
       }
 
     former_time = ros::Time::now().toSec();
@@ -433,6 +438,7 @@ namespace eye_contact {
   { 
     ros::NodeHandle nmv;
     ros::Rate rate(10.0);
+    bool state1_back = false;
     while(nmv.ok())
       {
 	//cout << "move_thread now_state:"<<state<<endl;
@@ -443,37 +449,82 @@ namespace eye_contact {
 	if( move_state )
 	  { 
 	    geometry_msgs::Twist cmd_vel;
+	    double roll, pitch, yaw;
+	    GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
+
 	    if(state==STATE1)
 	      {
-		cmd_vel.linear.x = 0.0;
-		cmd_vel.linear.y = 0.0;
-		cmd_vel.angular.z = 0.*M_PI/180.;	      
+		if(!state1_back)
+		  {
+		    cmd_vel.linear.x = 0.0;
+		    cmd_vel.linear.y = 0.0;
+		    cmd_vel.angular.z = 0.0*M_PI/180.;	      
+		    //state1_back = false;
+		    if(yaw < cmd_vel.angular.z)
+		      {
+
+			ROS_INFO("Stop!");
+			publishZeroVelocity();
+			move_state = false;
+			state1_back = true;
+		      }
+		    else
+		      {
+			vel_pub.publish(cmd_vel);
+		      }
+		  }
+		else
+		  {
+		    cmd_vel.linear.x = 0.0;
+		    cmd_vel.linear.y = 0.0;
+		    cmd_vel.angular.z = -90.*M_PI/180.;
+		    if(yaw < cmd_vel.angular.z)
+		      {
+			ROS_INFO("Stop!");
+			publishZeroVelocity();
+			move_state = false;
+			state1_back = false;
+		      }
+		    else
+		      {
+			vel_pub.publish(cmd_vel);
+		      }
+
+		  }
 	      }
 	    else if(state==STATE4)
 	      {
 		cmd_vel.linear.x = 0.0;
 		cmd_vel.linear.y = 0.0;
-		cmd_vel.angular.z = 90.*M_PI/180.;	
+		cmd_vel.angular.z = 90.*M_PI/180.;
+		//state1_back = true;	
+		if(yaw > cmd_vel.angular.z)
+		  {	    
+		    ROS_INFO("Stop!");
+		    publishZeroVelocity();
+		    move_state = false;
+		    state1_back *= -1;
+		  }
+		else
+		  {
+		    vel_pub.publish(cmd_vel);
+		  }
 	      }
 
-	    double roll, pitch, yaw;
-	    GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
-	    cout << "stop fabs(yaw -goal)[deg]:" << endl;
-	    if(fabs(yaw - cmd_vel.angular.z) < 10.*M_PI/180.)
-	      {
-		//cout << "stop fabs(yaw -goal)[deg]:" << endl;
-		publishZeroVelocity();
-		move_state = false;
-	      }
-	    else
-	      {
-		vel_pub.publish(cmd_vel);
-	      }
+
+	 
+	    cout << "yaw [deg]:"<< yaw*180./M_PI << endl;
+	    cout << "cmd.z [deg]:"<< cmd_vel.angular.z*180./M_PI << endl;
+	    cout << "yaw - cmd_vel.angular.z:" << yaw - cmd_vel.angular.z << endl;
+	    cout << "state1_back:" << state1_back << endl;
+	    //if(fabs(yaw - cmd_vel.angular.z)*180./M_PI < 10.)
+
 	  }	
 	else
 	  {
 	    publishZeroVelocity();
 	  }
+	//pre_state = state;
 	rate.sleep();	
       }
   }

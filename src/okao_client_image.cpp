@@ -59,7 +59,7 @@ public:
     : it_(nh_), context(3)
   {
     //画像データのサブスクライブとパブリッシュ
-    image_sub_ = it_.subscribe("/image_raw",1, 
+    image_sub_ = it_.subscribe("/usb_cam/image_raw",1, 
 			       &ImageConverter::imageCb, this);
     image_pub_ = it_.advertise("/image_converter/output_video",1);
 
