@@ -162,7 +162,7 @@ namespace eye_contact {
 	    humans_msgs::XYConf gaze_dir;
 	    dir.conf = 0;
 	    gaze_dir.conf = 0;
-	    contact_check_noface(dir, gaze_dir);
+	    contact_state = contact_check_noface(dir, gaze_dir);
 	  }
 
 	//現在のアイコンタクト状態判定および瞳の動き設定
@@ -171,7 +171,7 @@ namespace eye_contact {
 	//各種表示
 	fps = 1./ros::Duration(now_time-former_time).toSec();
 	
-	cout << "now state: "<<state<< "persons.size:" << msg->human.size() << endl;
+	cout << "now state: "<<state<< ",persons.size:" << msg->human.size() << endl;
 	  /*
 	  cout << "Duration(now-former):"<<ros::Duration(now_time-former_time).toSec()<<endl;	
 	  cout << "count_time[0]:"<<count_time[0]
@@ -254,7 +254,7 @@ namespace eye_contact {
 
     int point_sum = accumulate(point_buff.begin(), point_buff.end(), 0);
     //cout << "point_sum:" << point_sum << endl;
-    if( point_sum > queue_size/2)
+    if( point_sum > queue_size/2 )
       {
 	return true;
       }
@@ -264,11 +264,21 @@ namespace eye_contact {
       }
   } 
 
-  void EyeContact::contact_check_noface(humans_msgs::Direction dir, humans_msgs::XYConf gaze_dir)
+  bool EyeContact::contact_check_noface(humans_msgs::Direction dir, humans_msgs::XYConf gaze_dir)
   {
-    cout << "noface" << endl;
     point_buff.push_back(EyeContactDirAndGaze(0, 0, 0, 0));
     point_buff.erase(point_buff.begin());
+
+    int point_sum = accumulate(point_buff.begin(), point_buff.end(), 0);
+    //cout << "point_sum:" << point_sum << endl;
+    if( point_sum > queue_size/2 )
+      {
+	return true;
+      }
+    else
+      {
+	return false;
+      }
   }
 
   int EyeContact::face_right_and_left_check(int right_or_left)
