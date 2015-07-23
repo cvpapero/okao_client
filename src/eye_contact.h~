@@ -18,6 +18,8 @@
 #include <algorithm>
 #include <numeric>
 
+typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
+
 namespace eye_contact {
 
   class EyeContact {
@@ -34,7 +36,7 @@ namespace eye_contact {
 
     bool contact_check(humans_msgs::Direction dir, humans_msgs::XYConf gaze_dir);
 
-    void contact_check_noface(humans_msgs::Direction dir, humans_msgs::XYConf gaze_dir);
+    bool contact_check_noface(humans_msgs::Direction dir, humans_msgs::XYConf gaze_dir);
 
     int face_right_and_left_check(int right_or_left);
 

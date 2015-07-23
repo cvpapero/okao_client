@@ -10,13 +10,16 @@
 #include "humans_msgs/Humans.h"
 #include "eyeballs_msgs/Eyeballs.h"
 #include "nav_msgs/Odometry.h"
-
+#include <move_base_msgs/MoveBaseAction.h>
+#include <actionlib/client/simple_action_client.h>
 #include <boost/thread.hpp>
 
 #include <fstream>
 #include <functional>
 #include <algorithm>
 #include <numeric>
+
+typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
 namespace eye_contact {
 
