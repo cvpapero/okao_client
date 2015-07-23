@@ -520,12 +520,12 @@ namespace eye_contact {
 	    if(dir_horizon > 0)
 	      {
 	      //rot = -1*(dir_horizon+90-yaw);
-		rot = -180+dir_horizon+yaw;
+		rot = 180.-dir_horizon;
 	      }
 	    else if(dir_horizon < 0)
 	      {
 	      //rot = -1*(dir_horizon-90-yaw);
-		rot = 180+dir_horizon+yaw;
+		rot = -180.+abs(dir_horizon);
 	      }
 	    else
 	      rot = 0;
@@ -550,7 +550,7 @@ namespace eye_contact {
 	    //cout << "yaw [deg]:"<< yaw*180./M_PI << endl;
 	    //cout << "cmd.z [deg]:"<< cmd_vel.angular.z*180./M_PI << endl;
 	    //cout << "yaw - cmd_vel.angular.z [deg]:" << fabs(yaw-cmd_vel.angular.z)*180./M_PI << endl;
-	    ROS_INFO("rot:%f, dir_h:%d",rot,dir_horizon);
+	    ROS_INFO("rot:%f, dir_h:%d, yaw:%f",rot,dir_horizon,yaw);
 
 	    if(qtRoughlyEq(now_odom->pose.pose.orientation, goal.orientation))
 	      {	    
