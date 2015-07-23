@@ -520,12 +520,12 @@ namespace eye_contact {
 	    if(dir_horizon > 0)
 	      {
 	      //rot = -1*(dir_horizon+90-yaw);
-		rot = 180.-dir_horizon;
+		rot = -180.+dir_horizon;
 	      }
 	    else if(dir_horizon < 0)
 	      {
 	      //rot = -1*(dir_horizon-90-yaw);
-		rot = -180.+abs(dir_horizon);
+		rot = 180.+dir_horizon;
 	      }
 	    else
 	      rot = 0;
