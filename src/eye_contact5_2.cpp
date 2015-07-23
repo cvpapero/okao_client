@@ -546,7 +546,7 @@ namespace eye_contact {
 		cmd_vel.angular.z = (rot/3.)*(M_PI/180.);
 
 	      }
-	    
+	     
 	    //cout << "yaw [deg]:"<< yaw*180./M_PI << endl;
 	    //cout << "cmd.z [deg]:"<< cmd_vel.angular.z*180./M_PI << endl;
 	    //cout << "yaw - cmd_vel.angular.z [deg]:" << fabs(yaw-cmd_vel.angular.z)*180./M_PI << endl;
