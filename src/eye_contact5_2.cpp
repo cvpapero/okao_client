@@ -514,16 +514,23 @@ namespace eye_contact {
 	  { 
 	    geometry_msgs::Twist cmd_vel;
 	    
+	 
+	    GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
 
 	    if(dir_horizon > 0)
-	      rot = -1*(dir_horizon+90);
+	      {
+	      //rot = -1*(dir_horizon+90-yaw);
+		rot = -180+dir_horizon+yaw;
+	      }
 	    else if(dir_horizon < 0)
-	      rot = -1*(dir_horizon-90);
+	      {
+	      //rot = -1*(dir_horizon-90-yaw);
+		rot = 180+dir_horizon+yaw;
+	      }
 	    else
 	      rot = 0;
 
-	    //この関数は処理に使ってない...
-	    GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
+
 	    
 	    if(state==STATE1)
 	      {
@@ -543,7 +550,7 @@ namespace eye_contact {
 	    //cout << "yaw [deg]:"<< yaw*180./M_PI << endl;
 	    //cout << "cmd.z [deg]:"<< cmd_vel.angular.z*180./M_PI << endl;
 	    //cout << "yaw - cmd_vel.angular.z [deg]:" << fabs(yaw-cmd_vel.angular.z)*180./M_PI << endl;
-	    ROS_INFO("dir_h:%f",rot);
+	    ROS_INFO("rot:%f, dir_h:%d",rot,dir_horizon);
 
 	    if(qtRoughlyEq(now_odom->pose.pose.orientation, goal.orientation))
 	      {	    
