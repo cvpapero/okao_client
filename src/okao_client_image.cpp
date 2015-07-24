@@ -123,8 +123,8 @@ public:
 	double height = rgbImage.rows;
 	double resize_width =  width / img.cols; 
 	double resize_height = height / img.rows;
-	cout<<"img.cols: "<< img.cols <<",img.rows:"<< img.rows<< endl;
-	cout<<"resize_width: "<< resize_width << endl;
+	//cout<<"img.cols: "<< img.cols <<",img.rows:"<< img.rows<< endl;
+	//cout<<"resize_width: "<< resize_width << endl;
 	// 画像をエンコードする必要があれば
 	std::vector<int> encodeParam(2);
 	encodeParam[0] = CV_IMWRITE_PNG_COMPRESSION;
@@ -148,12 +148,17 @@ public:
 	reqMsg.img = buf;
 	reqMsg.param = param;
 	//	cout << "send to OKAOServer" << endl;
+
 	// 送信
+	double before = ros::Time::now().toSec();
 	OkaoServer::sendRequestMessage(*responder, reqMsg);
 	// 受信
 	//cout << "receive from OKAOServer" << endl;
 	OkaoServer::ReplyMessage repMsg;
 	OkaoServer::recvReplyMessage(*responder, &repMsg);
+	double after = ros::Time::now().toSec();
+	double between = ros::Duration(after-before).toSec();
+	std::cout<<"send to recv time:"<<between<<std::endl;
 	//std::cout << "repMsg.okao: " << repMsg.okao << std::endl;	
 	const char* json = repMsg.okao.c_str();
 	picojson::value v;

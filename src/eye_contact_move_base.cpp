@@ -173,18 +173,18 @@ namespace eye_contact {
 	
 	if((open_deg0 < 200 && open_conf0 > 100) && (open_deg1 < 200 && open_conf1 > 100))
 	  {
-	    ROS_INFO("blink!");
+	    //ROS_INFO("blink!");
 	    return 0;
 	  }
 	else
 	  {
-	    ROS_ERROR("no blink!");
+	    //ROS_ERROR("no blink!");
 	    return 1;
 	  }
       }
     else
       {
-	ROS_ERROR("no get blink!");
+	//ROS_ERROR("no get blink!");
 	return 2;
       }
   }
@@ -466,6 +466,7 @@ namespace eye_contact {
       ROS_INFO("Waiting for the move_base action server to come up");
     }
 
+    bool send_goal = true;
 
     while(nmv.ok())
       {
@@ -499,26 +500,22 @@ namespace eye_contact {
 	    else
 	      rot = 0;
 
+	    //どの座標軸上で考えるか？
 	    goal.target_pose.header.frame_id = "base_link";
 	    goal.target_pose.header.stamp = ros::Time::now();
 	    
 	    if(state==STATE1)
-	      {
-
-		
+	      {	    
 		//goal.target_pose.pose.position.x = 1.0;
 		//goal.target_pose.pose.orientation.w = 1.0;
 		goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(0);
 		//goal.orientation = origin_quat;//tf::createQuaternionMsgFromYaw(0.*M_PI/180.);
 		//cmd_vel.angular.z = -1*(rot/3.)*(M_PI/180.);
-
 	      }
 	    else if(state==STATE4)
 	      {
-
 		goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(rot*M_PI/180.);
 		//cmd_vel.angular.z = (rot/3.)*(M_PI/180.);
-
 	      }
 	     
 	    //cout << "yaw [deg]:"<< yaw*180./M_PI << endl;
@@ -526,18 +523,34 @@ namespace eye_contact {
 	    //cout << "yaw - cmd_vel.angular.z [deg]:" << fabs(yaw-cmd_vel.angular.z)*180./M_PI << endl;
 	    //ROS_INFO("rot:%f, dir_h:%d, yaw:%f",rot,dir_horizon,yaw);
 
-	    ac.sendGoal(goal);	    
-	    ac.waitForResult();
-
-	    if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-	      {	    
-		ROS_INFO("OK");
-		//publishZeroVelocity();
-		move_state = false;
-	      }
+	    if(send_goal)
+	      {
+		ac.sendGoal(goal);
+		send_goal = false;
+	      }	    
 	    else
 	      {
-		ROS_ERROR("miss");
+		if(state==STATE2 || state==STATE3)
+		  {
+		    ROS_INFO("rotation stop because face get");
+		    ac.cancelAllGoals();
+		    move_state = false;
+		    send_goal = true;
+		  }
+
+		if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+		  {	    
+		    ROS_INFO("OK");
+		    //publishZeroVelocity();
+		    move_state = false;
+		    send_goal = true;
+		  }
+		else if(ac.getState() == actionlib::SimpleClientGoalState::ABORTED)
+		  {
+		    ROS_ERROR("MISS");
+		    move_state = false;
+		    send_goal = true;
+		  }
 	      }
 	  }	
 
