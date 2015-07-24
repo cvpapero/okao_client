@@ -1,10 +1,12 @@
 #include <ros/ros.h>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <vector>
 //ROS
 #include <image_transport/image_transport.h>
@@ -53,7 +55,6 @@ private:
   zmq::socket_t* responder; 
 
 
-
 public:
   ImageConverter()
     : it_(nh_), context(3)
@@ -80,6 +81,7 @@ public:
       } 
     //ウィンドウ
     cv::namedWindow(OPENCV_WINDOW);
+
   }
 
   ~ImageConverter()
@@ -157,8 +159,20 @@ public:
 	OkaoServer::ReplyMessage repMsg;
 	OkaoServer::recvReplyMessage(*responder, &repMsg);
 	double after = ros::Time::now().toSec();
+	//通信時間の計測
 	double between = ros::Duration(after-before).toSec();
-	std::cout<<"send to recv time:"<<between<<std::endl;
+
+	//異常に遅かったらファイル出力する
+	if(between > 0.5)
+	  {
+	    time_t now = time(NULL);
+	    struct tm *pnow = localtime(&now);
+
+	    std::ofstream ofs("error_log.txt", std::ios::out | std::ios::app);
+	    ofs <<"time[" << pnow->tm_hour << ":" << pnow->tm_min 
+		<<":" << pnow->tm_sec << "] send to recv:" << between << std::endl;
+	  }
+
 	//std::cout << "repMsg.okao: " << repMsg.okao << std::endl;	
 	const char* json = repMsg.okao.c_str();
 	picojson::value v;
