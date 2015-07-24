@@ -54,6 +54,7 @@ private:
   zmq::context_t context;
   zmq::socket_t* responder; 
 
+  double f_cb_time, n_cb_time;
 
 public:
   ImageConverter()
@@ -82,6 +83,7 @@ public:
     //ウィンドウ
     cv::namedWindow(OPENCV_WINDOW);
 
+    f_cb_time = ros::Time::now().toSec();
   }
 
   ~ImageConverter()
@@ -169,8 +171,11 @@ public:
 	    struct tm *pnow = localtime(&now);
 
 	    std::ofstream ofs("error_log.txt", std::ios::out | std::ios::app);
-	    ofs <<"time[" << pnow->tm_hour << ":" << pnow->tm_min 
-		<<":" << pnow->tm_sec << "] send to recv:" << between << std::endl;
+	    ofs <<"send to recv time[" << pnow->tm_hour << ":" << pnow->tm_min 
+		<<":" << pnow->tm_sec << "]" << std::endl 
+		<<"between:" << between << std::endl
+		<<"rep msg:"<< std::endl
+		<< repMsg.okao<< std::endl;
 	  }
 
 	//std::cout << "repMsg.okao: " << repMsg.okao << std::endl;	
@@ -285,6 +290,21 @@ public:
 
 
     okaoData_pub_.publish(hums);
+
+    n_cb_time = ros::Time::now().toSec();
+    double cb_between = ros::Duration(n_cb_time - f_cb_time).toSec();
+    //異常に遅かったらファイル出力する
+    if(cb_between > 0.5)
+      {
+	time_t now = time(NULL);
+	struct tm *pnow = localtime(&now);
+	
+	std::ofstream ofs("error_log.txt", std::ios::out | std::ios::app);
+	ofs <<"callback time[" << pnow->tm_hour << ":" << pnow->tm_min 
+	    <<":" << pnow->tm_sec << "]" << std::endl 
+	    <<"cb_between:" << cb_between << std::endl;
+      }
+    f_cb_time = n_cb_time;
 
   }
   
