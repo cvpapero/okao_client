@@ -10,6 +10,7 @@
 #include "humans_msgs/Humans.h"
 #include "eyeballs_msgs/Eyeballs.h"
 #include "nav_msgs/Odometry.h"
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <actionlib/client/simple_action_client.h>
 #include <boost/thread.hpp>
@@ -72,6 +73,7 @@ namespace eye_contact {
     ros::Publisher eye_pub, vel_pub;
     eyeballs_msgs::Eyeballs ebs;
     nav_msgs::OdometryConstPtr now_odom;
+    geometry_msgs::PoseWithCovarianceStampedConstPtr now_pose;
     boost::thread* move_thread;
     
     tf::TransformListener listener;

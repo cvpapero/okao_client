@@ -447,14 +447,18 @@ namespace eye_contact {
     ros::Rate rate(30);
     bool state1_back = false;
 
+    geometry_msgs::Point origin_point;
     geometry_msgs::Quaternion origin_quat;
 
     double roll, pitch, yaw;
-    now_odom =
-      ros::topic::waitForMessage<nav_msgs::Odometry>("/RosAria/pose");
-    GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
 
-    origin_quat = now_odom->pose.pose.orientation;
+    now_pose =
+      ros::topic::waitForMessage<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose");
+    //now_odom =
+    //  ros::topic::waitForMessage<nav_msgs::Odometry>("/RosAria/pose");
+    //GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
+    origin_point = now_pose->pose.pose.position;
+    origin_quat = now_pose->pose.pose.orientation;
 
     double rot = 0;
 
@@ -472,8 +476,7 @@ namespace eye_contact {
       {
 	//cout << "move_thread now_state:"<<state<<endl;
 	//サブスクライブ
-	//now_odom =
-	//  ros::topic::waitForMessage<nav_msgs::Odometry>("/RosAria/pose");
+
 	//cout << "odom:" << now_odom->pose.pose.orientation <<endl;
 
 	//bool stop = false;
@@ -501,19 +504,21 @@ namespace eye_contact {
 	      rot = 0;
 
 	    //どの座標軸上で考えるか？
-	    goal.target_pose.header.frame_id = "base_link";
+	    goal.target_pose.header.frame_id = "map";
 	    goal.target_pose.header.stamp = ros::Time::now();
 	    
 	    if(state==STATE1)
 	      {	    
 		//goal.target_pose.pose.position.x = 1.0;
 		//goal.target_pose.pose.orientation.w = 1.0;
-		goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(0);
-		//goal.orientation = origin_quat;//tf::createQuaternionMsgFromYaw(0.*M_PI/180.);
+		//goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(0);
+		goal.target_pose.pose.position = origin_point;
+		goal.target_pose.pose.orientation = origin_quat;//tf::createQuaternionMsgFromYaw(0.*M_PI/180.);
 		//cmd_vel.angular.z = -1*(rot/3.)*(M_PI/180.);
 	      }
 	    else if(state==STATE4)
 	      {
+		goal.target_pose.pose.position = origin_point;
 		goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(rot*M_PI/180.);
 		//cmd_vel.angular.z = (rot/3.)*(M_PI/180.);
 	      }
