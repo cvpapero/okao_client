@@ -471,9 +471,7 @@ namespace eye_contact {
 
     now_pose =
       ros::topic::waitForMessage<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose");
-    //now_odom =
-    //  ros::topic::waitForMessage<nav_msgs::Odometry>("/RosAria/pose");
-    //GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
+
     origin_point = now_pose->pose.pose.position;
     origin_quat = now_pose->pose.pose.orientation;
 
@@ -534,6 +532,11 @@ namespace eye_contact {
 		    ac.cancelAllGoals();
 		    move_state = false;
 		    send_goal = true;
+		    now_pose =
+		      ros::topic::waitForMessage<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose");
+		    
+		    origin_point = now_pose->pose.pose.position;
+		    origin_quat = now_pose->pose.pose.orientation;
 		  }
 
 		if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
