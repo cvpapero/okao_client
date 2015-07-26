@@ -1,4 +1,15 @@
 /*
+2015.7.26
+
+移動中はカウントしない
+
+狙ったとおりに動かないのだとしたら何が原因だと考えられるか？
+
+そもそも、どういったことが生じているか
+1.最初は、向いている方向に止まるが、次第に、微妙なズレで終わる
+2.stateのとおりに動いているか?
+つまり、今は、行く回転、今は、戻る回転、などという変化が、正しく行われているか？
+
 
 2015.7.23
 move_baseを介して回転してみる
@@ -32,10 +43,10 @@ namespace eye_contact {
     count_time[1] = 0;
     count_time[2] = 0;
     count_time[3] = 0;
-    tm_param[0] = 6.0;
+    tm_param[0] = 3.0;
     tm_param[1] = 2.5;
     tm_param[2] = 0.5;
-    tm_param[3] = 6.0;
+    tm_param[3] = 3.0;
 
     //見つめる時間
     threshold_time[0] = ros::Duration(tm_param[0]).toSec();
@@ -268,17 +279,20 @@ namespace eye_contact {
 	  }
 	else
 	  {
-	    //ここで相手の視線方向を見たり、相手の方を見たりする
-	    count_time[0] = count_time[0] + diff;
-	    if( count_time[0] > threshold_time[0] )
+	    //動いていない時のみ
+	    if(!move_state)
 	      {
-		state = STATE4;	
-		move_state = true;
-		count_time[0] = 0;
-	      }
-	    else
-	      {
-		state = STATE1;
+		count_time[0] = count_time[0] + diff;
+		if( count_time[0] > threshold_time[0] )
+		  {
+		    state = STATE4;	
+		    move_state = true;
+		    count_time[0] = 0;
+		  }
+		else
+		  {
+		    state = STATE1;
+		  }
 	      }
 	    ebs.right.x = micro_motion;
 	    ebs.left.x = micro_motion;
@@ -339,17 +353,20 @@ namespace eye_contact {
 	break;
 
       case 4:
-	
-	count_time[3] = count_time[3] + diff;
-	if( count_time[3] > threshold_time[3] )
+	//動いていない時のみ
+	if(!move_state)
 	  {
-	    state = STATE1;
-	    move_state = true;	
-	    count_time[3] = 0;
-	  }
-	else
-	  {
-	    state = STATE4;
+	    count_time[3] = count_time[3] + diff;
+	    if( count_time[3] > threshold_time[3] )
+	      {
+		state = STATE1;
+		move_state = true;	
+		count_time[3] = 0;
+	      }
+	    else
+	      {
+		state = STATE4;
+	      }
 	  }
 	ebs.right.x = micro_motion;
 	ebs.left.x = micro_motion;
@@ -474,59 +491,35 @@ namespace eye_contact {
 
     while(nmv.ok())
       {
-	//cout << "move_thread now_state:"<<state<<endl;
-	//サブスクライブ
-
-	//cout << "odom:" << now_odom->pose.pose.orientation <<endl;
-
-	//bool stop = false;
-	//geometry_msgs::Pose goal;
-
-
 	if( move_state )
 	  { 
 	    geometry_msgs::Twist cmd_vel;
 	    move_base_msgs::MoveBaseGoal goal;
-	 
-	    //GetRPY(now_odom->pose.pose.orientation,roll, pitch, yaw);
 
 	    if(dir_horizon > 0)
 	      {
-	      //rot = -1*(dir_horizon+90-yaw);
 		rot = -180.+dir_horizon;
 	      }
 	    else if(dir_horizon < 0)
 	      {
-	      //rot = -1*(dir_horizon-90-yaw);
 		rot = 180.+dir_horizon;
 	      }
 	    else
 	      rot = 0;
 
-	    //どの座標軸上で考えるか？
 	    goal.target_pose.header.frame_id = "map";
 	    goal.target_pose.header.stamp = ros::Time::now();
 	    
 	    if(state==STATE1)
 	      {	    
-		//goal.target_pose.pose.position.x = 1.0;
-		//goal.target_pose.pose.orientation.w = 1.0;
-		//goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(0);
 		goal.target_pose.pose.position = origin_point;
-		goal.target_pose.pose.orientation = origin_quat;//tf::createQuaternionMsgFromYaw(0.*M_PI/180.);
-		//cmd_vel.angular.z = -1*(rot/3.)*(M_PI/180.);
+		goal.target_pose.pose.orientation = origin_quat;
 	      }
 	    else if(state==STATE4)
 	      {
 		goal.target_pose.pose.position = origin_point;
 		goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(rot*M_PI/180.);
-		//cmd_vel.angular.z = (rot/3.)*(M_PI/180.);
 	      }
-	     
-	    //cout << "yaw [deg]:"<< yaw*180./M_PI << endl;
-	    //cout << "cmd.z [deg]:"<< cmd_vel.angular.z*180./M_PI << endl;
-	    //cout << "yaw - cmd_vel.angular.z [deg]:" << fabs(yaw-cmd_vel.angular.z)*180./M_PI << endl;
-	    //ROS_INFO("rot:%f, dir_h:%d, yaw:%f",rot,dir_horizon,yaw);
 
 	    if(send_goal)
 	      {
@@ -546,7 +539,6 @@ namespace eye_contact {
 		if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
 		  {	    
 		    ROS_INFO("OK");
-		    //publishZeroVelocity();
 		    move_state = false;
 		    send_goal = true;
 		  }
