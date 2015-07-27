@@ -518,7 +518,13 @@ namespace eye_contact {
 	    else if(state==STATE4)
 	      {
 		goal.target_pose.pose.position = origin_point;
-		goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw((yaw+rot)*M_PI/180.);
+		double now_th = yaw/2.*(M_PI/180.); 
+		double del_th = rot/2.*(M_PI/180.);
+		goal.target_pose.pose.orientation.z = sin(now_th+del_th);  
+		goal.target_pose.pose.orientation.w = cos(now_th+del_th);
+
+
+//tf::createQuaternionMsgFromYaw((yaw+rot)*M_PI/180.);
 	      }
 
 	    if(send_goal)
