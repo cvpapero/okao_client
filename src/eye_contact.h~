@@ -10,6 +10,7 @@
 #include "humans_msgs/Humans.h"
 #include "eyeballs_msgs/Eyeballs.h"
 #include "nav_msgs/Odometry.h"
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <actionlib/client/simple_action_client.h>
 #include <boost/thread.hpp>
@@ -55,7 +56,7 @@ namespace eye_contact {
 
     void moveThread();
 
-    void GetRPY(const geometry_msgs::Quaternion &q,double &roll,double &pitch,double &yaw);
+    void GetRPY(const geometry_msgs::Quaternion q,double &roll,double &pitch,double &yaw);
     void GetTfRPY(const tf::Quaternion btq, double &roll,double &pitch,double &yaw);
 
     void GetQtFromYaw(const geometry_msgs::Quaternion &quat, double yaw);

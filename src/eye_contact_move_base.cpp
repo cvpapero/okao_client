@@ -475,6 +475,8 @@ namespace eye_contact {
     origin_point = now_pose->pose.pose.position;
     origin_quat = now_pose->pose.pose.orientation;
 
+    GetRPY(origin_quat, roll, pitch, yaw);
+
     double rot = 0;
 
     //tell the action client that we want to spin a thread by default
@@ -516,7 +518,7 @@ namespace eye_contact {
 	    else if(state==STATE4)
 	      {
 		goal.target_pose.pose.position = origin_point;
-		goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(rot*M_PI/180.);
+		goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw((yaw+rot)*M_PI/180.);
 	      }
 
 	    if(send_goal)
@@ -537,6 +539,7 @@ namespace eye_contact {
 		    
 		    origin_point = now_pose->pose.pose.position;
 		    origin_quat = now_pose->pose.pose.orientation;
+		    GetRPY(origin_quat, roll, pitch, yaw);
 		  }
 
 		if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
