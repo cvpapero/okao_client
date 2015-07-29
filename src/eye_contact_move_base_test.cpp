@@ -490,7 +490,7 @@ namespace eye_contact {
 
     while(nmv.ok())
       {
-	std::ofstream ofs("error_log.txt", std::ios::out | std::ios::app);
+	std::ofstream ofs("error_log_yaw.txt", std::ios::out | std::ios::app);
 	ofs << "now_state:" << state << endl;
 
 	geometry_msgs::Quaternion rot_quat;
@@ -557,6 +557,10 @@ namespace eye_contact {
 		    send_goal = true;
 		    ofs << "rotation stop because face get" << endl;
 		    //GetRPY(origin_quat, roll, pitch, yaw);
+		    now_pose =
+		      ros::topic::waitForMessage<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose");
+		    origin_point = now_pose->pose.pose.position;
+		    origin_quat = now_pose->pose.pose.orientation;
 		  }
 
 		if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
@@ -564,12 +568,11 @@ namespace eye_contact {
 		    ROS_INFO("OK");
 		    move_state = false;
 		    send_goal = true;
-		    ofs << "OK" << endl;
 		    now_pose =
 		      ros::topic::waitForMessage<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose");
-		    
-		    origin_point = now_pose->pose.pose.position;
-		    origin_quat = now_pose->pose.pose.orientation;
+		    double g_r,g_p,g_y;
+		    GetRPY(now_pose->pose.pose.orientation, g_r, g_p, g_y);
+		    ofs << "OK: now yaw:"<<g_y << endl;
 		  }
 		else if(ac.getState() == actionlib::SimpleClientGoalState::ABORTED)
 		  {
