@@ -7,6 +7,7 @@ okaoとokaoNotは、やはり同じパブリッシュ先を持つべき
  
  */
 
+
 //basic
 #include <iostream>
 #include <sstream>

@@ -1,19 +1,6 @@
 /*
-2015.7.26
-
-移動中はカウントしない
-
-狙ったとおりに動かないのだとしたら何が原因だと考えられるか？
-
-そもそも、どういったことが生じているか
-1.最初は、向いている方向に止まるが、次第に、微妙なズレで終わる
-2.stateのとおりに動いているか?
-つまり、今は、行く回転、今は、戻る回転、などという変化が、正しく行われているか？
-
-
-2015.7.23
-move_baseを介して回転してみる
-ためしに
+2015.7.29
+動作テスト
 
 
 */
@@ -525,15 +512,14 @@ namespace eye_contact {
 	    if(state==STATE1)
 	      {	    
 		goal.target_pose.pose.position = origin_point;
-		goal.target_pose.pose.orientation = origin_quat;
+		goal.target_pose.pose.orientation.z = 0; //origin_quat;
+		goal.target_pose.pose.orientation.w = 1;
 	      }
 	    else if(state==STATE4)
 	      {
-		goal.target_pose.pose.position = origin_point;
-		double now_th = yaw/2.*(M_PI/180.); 
-		double del_th = rot/2.*(M_PI/180.);
-		  
-		goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw((yaw+rot)*M_PI/180.);
+		goal.target_pose.pose.position = origin_point;		  
+		//とりあえず0,0,0,1を始点として回転してみる
+		goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(rot*M_PI/180.);
 	      }
 
 	    if(send_goal)

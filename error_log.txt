@@ -1,0 +1,16 @@
+send to recv time[16:17:57]
+between:0.50125
+rep msg:
+{"process_time": 31, "faces": [{"direction": [20, -24, -13, 6], "open_level": [[293, 0], [372, 0], [66, 0]], "db_info": [{"grade": "M1", "laboratory": "InteractiontLab", "nameID": 1, "name": "Uema"}, {"grade": "Prof", "laboratory": "InteractiontLab", "nameID": 13, "name": "Shimada"}, {"grade": "M2", "laboratory": "InteractiontLab", "nameID": 8, "name": "Kawakita"}], "points": [[347, 221, 954], [404, 198, 6], [401, 286, 50], [360, 220, 954], [334, 224, 954], [394, 205, 6], [414, 194, 6], [378, 290, 50], [413, 276, 50], [343, 222, 1000], [407, 222, 1000]], "position": [321, 175, 453, 307, 520], "id": [[1, 200], [13, 193], [8, 167]], "gaze_direction": [3, -12, 300]}], "error": ""}
+callback time[16:17:57]
+cb_between:0.569396
+callback time[16:18:3]
+cb_between:0.504592
+send to recv time[16:18:34]
+between:0.692621
+rep msg:
+{"process_time": 15, "faces": [], "error": ""}
+callback time[16:18:34]
+cb_between:0.722883
+callback time[16:45:1]
+cb_between:0.741294
