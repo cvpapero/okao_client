@@ -490,6 +490,7 @@ namespace eye_contact {
 
     while(nmv.ok())
       {
+	geometry_msgs::Quaternion rot_quat;
 	if( move_state )
 	  { 
 	    geometry_msgs::Twist cmd_vel;
@@ -520,7 +521,7 @@ namespace eye_contact {
 	      {
 		goal.target_pose.pose.position = origin_point;		  
 		//とりあえず0,0,0,1を始点として回転してみる
-		geometry_msgs::Quaternion rot_quat = tf::createQuaternionMsgFromYaw(rot*M_PI/180.);
+		rot_quat = tf::createQuaternionMsgFromYaw(rot*M_PI/180.);
 		//goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(rot*M_PI/180.);
 		goal.target_pose.pose.orientation.z = origin_quat.w*rot_quat.z + origin_quat.z*rot_quat.w;
 		goal.target_pose.pose.orientation.w = origin_quat.w*rot_quat.w - origin_quat.z*rot_quat.z;
@@ -564,6 +565,11 @@ namespace eye_contact {
 	      }
 	  }	
 
+	double o_r,o_p,o_y,r_r,r_p,r_y;
+	GetRPY(origin_quat, o_r, o_p, o_y);
+	cout <<"origin:" << o_y << endl;
+	GetRPY(rot_quat, r_r, r_p, r_y);
+	cout <<"origin:" << r_y << endl;
 	rate.sleep();	
       }
   }
