@@ -512,8 +512,6 @@ namespace eye_contact {
 
 	    double o_r,o_p,o_y;
 	    GetRPY(origin_quat, o_r, o_p, o_y);
-	    //cout <<"origin:" << o_y << endl;
-
 
 	    ofs <<"origin:" << o_y << endl;
 
@@ -524,22 +522,21 @@ namespace eye_contact {
 	      {	    
 		goal.target_pose.pose.position = origin_point;
 		goal.target_pose.pose.orientation = origin_quat;
-		//goal.target_pose.pose.orientation.z = 0; //origin_quat;
-		//goal.target_pose.pose.orientation.w = 1;
 	      }
 	    else if(state==STATE4)
 	      {
 		goal.target_pose.pose.position = origin_point;		  
-		//とりあえず0,0,0,1を始点として回転してみる
+
 		rot_quat = tf::createQuaternionMsgFromYaw(rot*M_PI/180.);
-		//goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(rot*M_PI/180.);
 		goal.target_pose.pose.orientation.z = origin_quat.w*rot_quat.z + origin_quat.z*rot_quat.w;
 		goal.target_pose.pose.orientation.w = origin_quat.w*rot_quat.w - origin_quat.z*rot_quat.z;
 
 		double r_r,r_p,r_y;
 		GetRPY(rot_quat, r_r, r_p, r_y);
-		//cout <<"rot:" << r_y << endl;
 		ofs <<"rot:" << r_y << endl;
+		double rg_r,rg_p,rg_y;
+		GetRPY(goal.target_pose.pose.orientation, rg_r, rg_p, rg_y);
+		ofs <<"goal:"<< rg_y << endl; 
 	      }
 
 	    if(send_goal)
@@ -555,12 +552,15 @@ namespace eye_contact {
 		    ac.cancelAllGoals();
 		    move_state = false;
 		    send_goal = true;
-		    ofs << "rotation stop because face get" << endl;
+
 		    //GetRPY(origin_quat, roll, pitch, yaw);
 		    now_pose =
 		      ros::topic::waitForMessage<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose");
 		    origin_point = now_pose->pose.pose.position;
 		    origin_quat = now_pose->pose.pose.orientation;
+		    double s_r,s_p,s_y;
+		    GetRPY(origin_quat, s_r, s_p, s_y);
+		    ofs << "stop! because state_" <<state<<", now origin yaw:" << s_y << endl;
 		  }
 
 		if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
