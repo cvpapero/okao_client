@@ -544,7 +544,7 @@ namespace eye_contact {
 		    
 		    origin_point = now_pose->pose.pose.position;
 		    origin_quat = now_pose->pose.pose.orientation;
-		    GetRPY(origin_quat, roll, pitch, yaw);
+		    //GetRPY(origin_quat, roll, pitch, yaw);
 		  }
 
 		if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
@@ -552,6 +552,12 @@ namespace eye_contact {
 		    ROS_INFO("OK");
 		    move_state = false;
 		    send_goal = true;
+
+		    now_pose =
+		      ros::topic::waitForMessage<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose");
+		    
+		    origin_point = now_pose->pose.pose.position;
+		    origin_quat = now_pose->pose.pose.orientation;
 		  }
 		else if(ac.getState() == actionlib::SimpleClientGoalState::ABORTED)
 		  {
