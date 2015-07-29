@@ -512,14 +512,18 @@ namespace eye_contact {
 	    if(state==STATE1)
 	      {	    
 		goal.target_pose.pose.position = origin_point;
-		goal.target_pose.pose.orientation.z = 0; //origin_quat;
-		goal.target_pose.pose.orientation.w = 1;
+		goal.target_pose.pose.orientation = origin_quat;
+		//goal.target_pose.pose.orientation.z = 0; //origin_quat;
+		//goal.target_pose.pose.orientation.w = 1;
 	      }
 	    else if(state==STATE4)
 	      {
 		goal.target_pose.pose.position = origin_point;		  
 		//とりあえず0,0,0,1を始点として回転してみる
-		goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(rot*M_PI/180.);
+		geometry_msgs::Quaternion rot_quat = tf::createQuaternionMsgFromYaw(rot*M_PI/180.);
+		//goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(rot*M_PI/180.);
+		goal.target_pose.pose.orientation.z = origin_quat.w*rot_quat.z + origin_quat.z*rot_quat.w;
+		goal.target_pose.pose.orientation.w = origin_quat.w*rot_quat.w - origin_quat.z*rot_quat.z;
 	      }
 
 	    if(send_goal)
