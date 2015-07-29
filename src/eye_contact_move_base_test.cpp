@@ -539,11 +539,7 @@ namespace eye_contact {
 		    ac.cancelAllGoals();
 		    move_state = false;
 		    send_goal = true;
-		    now_pose =
-		      ros::topic::waitForMessage<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose");
-		    
-		    origin_point = now_pose->pose.pose.position;
-		    origin_quat = now_pose->pose.pose.orientation;
+
 		    //GetRPY(origin_quat, roll, pitch, yaw);
 		  }
 
