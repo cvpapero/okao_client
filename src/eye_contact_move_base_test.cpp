@@ -507,6 +507,11 @@ namespace eye_contact {
 	    else
 	      rot = 0;
 
+	    double o_r,o_p,o_y;
+	    GetRPY(origin_quat, o_r, o_p, o_y);
+	    cout <<"origin:" << o_y << endl;
+
+
 	    goal.target_pose.header.frame_id = "map";
 	    goal.target_pose.header.stamp = ros::Time::now();
 	    
@@ -525,6 +530,10 @@ namespace eye_contact {
 		//goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(rot*M_PI/180.);
 		goal.target_pose.pose.orientation.z = origin_quat.w*rot_quat.z + origin_quat.z*rot_quat.w;
 		goal.target_pose.pose.orientation.w = origin_quat.w*rot_quat.w - origin_quat.z*rot_quat.z;
+
+		double r_r,r_p,r_y;
+		GetRPY(rot_quat, r_r, r_p, r_y);
+		cout <<"rot:" << r_y << endl;
 	      }
 
 	    if(send_goal)
@@ -565,11 +574,7 @@ namespace eye_contact {
 	      }
 	  }	
 
-	double o_r,o_p,o_y,r_r,r_p,r_y;
-	GetRPY(origin_quat, o_r, o_p, o_y);
-	cout <<"origin:" << o_y << endl;
-	GetRPY(rot_quat, r_r, r_p, r_y);
-	cout <<"origin:" << r_y << endl;
+
 	rate.sleep();	
       }
   }
