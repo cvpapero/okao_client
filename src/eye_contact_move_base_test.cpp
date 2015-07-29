@@ -6,7 +6,7 @@
 */
 
 #include "eye_contact.h"
-
+#include <fstream>
 
 #define STATE1 1
 #define STATE2 2
@@ -490,6 +490,9 @@ namespace eye_contact {
 
     while(nmv.ok())
       {
+	std::ofstream ofs("error_log.txt", std::ios::out | std::ios::app);
+	ofs << "now_state:" << state << endl;
+
 	geometry_msgs::Quaternion rot_quat;
 	if( move_state )
 	  { 
@@ -509,8 +512,10 @@ namespace eye_contact {
 
 	    double o_r,o_p,o_y;
 	    GetRPY(origin_quat, o_r, o_p, o_y);
-	    cout <<"origin:" << o_y << endl;
+	    //cout <<"origin:" << o_y << endl;
 
+
+	    ofs <<"origin:" << o_y << endl;
 
 	    goal.target_pose.header.frame_id = "map";
 	    goal.target_pose.header.stamp = ros::Time::now();
@@ -533,7 +538,8 @@ namespace eye_contact {
 
 		double r_r,r_p,r_y;
 		GetRPY(rot_quat, r_r, r_p, r_y);
-		cout <<"rot:" << r_y << endl;
+		//cout <<"rot:" << r_y << endl;
+		ofs <<"rot:" << r_y << endl;
 	      }
 
 	    if(send_goal)
@@ -549,7 +555,7 @@ namespace eye_contact {
 		    ac.cancelAllGoals();
 		    move_state = false;
 		    send_goal = true;
-
+		    ofs << "rotation stop because face get" << endl;
 		    //GetRPY(origin_quat, roll, pitch, yaw);
 		  }
 
@@ -558,7 +564,7 @@ namespace eye_contact {
 		    ROS_INFO("OK");
 		    move_state = false;
 		    send_goal = true;
-
+		    ofs << "OK" << endl;
 		    now_pose =
 		      ros::topic::waitForMessage<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose");
 		    
@@ -568,6 +574,7 @@ namespace eye_contact {
 		else if(ac.getState() == actionlib::SimpleClientGoalState::ABORTED)
 		  {
 		    ROS_ERROR("MISS");
+		    ofs << "MISS" << endl;
 		    move_state = false;
 		    send_goal = true;
 		  }
