@@ -34,8 +34,8 @@ d_idに基づいてパブリッシュ
 #include "humans_msgs/Humans.h"
 #include "humans_msgs/HumanSrv.h"
 #include "humans_msgs/HumansSrv.h"
-//#include "okao_client/OkaoStack.h"
 #include "okao_client/OkaoStack.h"
+//#include "okao_client/OkaoStack.h"
 #include "MsgToMsg.hpp"
 
 #define MAGNI 1.5
@@ -123,7 +123,7 @@ public:
     //まず、ファイルは以下のような形式にする
     //okao_id,name,hist,x,y,z 
     //okao_idをみて、人物の位置をo_DBHumanに詰め込んでいく   
-    std::ifstream ifs("/home/uema/catkin_ws/src/okao_client/src/people/peopledata.txt");
+    std::ifstream ifs("peopledata.txt");
     if(ifs.fail())
       {  // if(!fin)でもよい。
 	cout << "file not open" << endl;
@@ -150,24 +150,14 @@ public:
     stringstream ss;
     map<int, humans_msgs::Human>::iterator it_o = o_DBHuman.begin();
     while( it_o != o_DBHuman.end() )
-      {
-	//if( it_o->second.body.tracking_id == req.src.body.tracking_id )
-	// {	
+      {	
 	ss << it_o->second.max_okao_id << " " << "test" //it_o->second.face.persons[0].name 
 	   << " " << it_o->second.max_hist << " " << it_o->second.p.x 
 	   << " " << it_o->second.p.y << " " << it_o->second.p.z <<endl; 
-	  //<<" to frame_id: " << h_res.header.frame_id <<endl;
-	//transformPosition(it_o->second, &h_res);
-	//getPerson(it_o->second, &h_res);
-	
-	//h_res;
-	//res.dst = h_res;//it_o->second;
-	//return true;
-
 	++it_o; 
       }
 
-    std::ofstream ofs("/home/uema/catkin_ws/src/okao_client/src/people/peopledata_d.txt");
+    std::ofstream ofs("peopledata.txt");
 
     if(ofs.fail())
       {  // if(!fout)でもよい。
