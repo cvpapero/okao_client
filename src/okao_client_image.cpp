@@ -235,6 +235,7 @@ public:
 		    //cout <<"sin(gaze): " << sin(rad_g) << ", sin(face): " << sin(rad_f)<<endl; 
 
 		    int tol = 7;
+		    /*
 		    if(dir_f_h < 0 && dir_g_h > 0)
 		      {
 			color_g = cv::Scalar(0,0,255);
@@ -246,6 +247,17 @@ public:
 			color_f = cv::Scalar(255,255,0);
 		      }
 		    else if( (abs(abs(dir_f_h) - abs(dir_g_h) ) < tol) && abs(dir_f_h) < tol )
+		      {
+			color_g = cv::Scalar(255,0,255);
+			color_f = cv::Scalar(255,0,255);
+		      }
+		    else
+		      {
+			color_g = cv::Scalar(0,0,0);
+			color_f = cv::Scalar(0,0,0);
+		      }
+		    */
+		    if( (abs(abs(dir_f_h) - abs(dir_g_h) ) < tol) && (abs(dir_f_h) < tol) )
 		      {
 			color_g = cv::Scalar(255,0,255);
 			color_f = cv::Scalar(255,0,255);

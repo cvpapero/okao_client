@@ -206,6 +206,10 @@ target_link_libraries(recog_info_vision ${catkin_LIBRARIES} ${OpenCV_LIBS})
 add_executable(eye_contact_move_base_test src/eye_contact_move_base_test.cpp)
 target_link_libraries(eye_contact_move_base_test ${catkin_LIBRARIES})
 
+add_executable(eye_contact_move_base src/eye_contact_move_base.cpp)
+target_link_libraries(eye_contact_move_base ${catkin_LIBRARIES})
+
+
 add_executable(okao_stack src/okao_stack.cpp)
 target_link_libraries(okao_stack ${catkin_LIBRARIES})
 

@@ -138,7 +138,12 @@ namespace eye_contact {
 	  <<", threshold_time[2]:"<<threshold_time[2]<<endl;
 	  cout << "fps:"<< fps <<endl;
 	  */
+
+	ebs.dir.h = msg->human[i].face.direction.x;
+	ebs.dir.v = msg->human[i].face.direction.y;
+	ebs.dir.conf = msg->human[i].face.direction.conf;
       }
+
 
     former_time = ros::Time::now().toSec();
     ebs.state = state;
