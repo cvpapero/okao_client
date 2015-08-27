@@ -1,0 +1,7 @@
+<launch>
+	<node pkg="okao_client" type="okao_client_image" name="okao_client_image" output="screen">
+	<node pkg="okao_client" type="okao_client_image" name="okao_client_image" output="screen">
+ 		<remap from="/usb_cam/image_raw" to="/image_raw" />
+	</node>
+
+</launch>

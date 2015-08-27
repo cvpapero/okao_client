@@ -1,0 +1,15 @@
+0 Unknown 0 0 0 0
+1 Uema 0 0 0 0
+2 Morioka 0 0 0 0
+3 Nogawa 0 0 0 0
+4 Ikegami 0 0 0 0
+5 Adachi 0 0 0 0
+6 Hirai 0 0 0 0
+7 Teranishi 0 0 0 0
+8 Kawakita 0 0 0 0
+9 Fukuhara 0 0 0 0
+10 Nishida 0 0 0 0
+11 Kawamoto 0 0 0 0
+12 Yatsuzuka 0 0 0 0
+13 Shimada 0 0 0 0
+

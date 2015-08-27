@@ -1,0 +1,10 @@
+<launch>
+	<include file = "$(find automation)/launch/pioneer_move_base.launch" />
+	<include file = "$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+	<node pkg="uvc_camera" type="uvc_camera_node" name="uvc_camera_node" output="screen" />
+	<node pkg="okao_client" type="okao_client_image" name="okao_client_image" output="screen">
+	      <remap from="/usb_cam/image_raw" to="/image_raw" />
+	</node>
+	<node pkg="okao_client" type="eye_contact_move_base_test" name="eye_contact" output="screen" />
+
+</launch>
