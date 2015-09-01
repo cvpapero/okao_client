@@ -78,7 +78,7 @@ public:
     //まず、ファイルは以下のような形式にする
     //okao_id,name,hist,x,y,z 
     //okao_idをみて、人物の位置をo_DBHumanに詰め込んでいく   
-    std::ifstream ifs("/home/uema/catkin_ws/src/okao_client/src/images/okaodata.txt");
+    std::ifstream ifs("/home/roomba/catkin_ws/src/okao_client/src/images/okaodata.txt");
     if(ifs.fail())
       {  // if(!fin)でもよい。
 	cout << "input file error!" << endl;
@@ -96,7 +96,7 @@ public:
 	try
 	  {
 	    stringstream image_name;
-	    image_name <<"/home/uema/catkin_ws/src/okao_client/src/images/okao" << fhum.max_okao_id << ".jpg";
+	    image_name <<"/home/roomba/catkin_ws/src/okao_client/src/images/okao" << fhum.max_okao_id << ".jpg";
 	    cv::Mat src = cv::imread(image_name.str());
 	    cout << "input: " << image_name.str() << endl;
 	    sensor_msgs::Image output, grayOutput;
@@ -152,7 +152,7 @@ public:
 	
 	cv::Mat out = cv_ptr->image;
 	stringstream ss;
-	ss <<"/home/uema/catkin_ws/src/okao_client/src/images/okao" << imgit->first <<".jpg";
+	ss <<"/home/roomba/catkin_ws/src/okao_client/src/images/okao" << imgit->first <<".jpg";
 	cv::imwrite(ss.str(),cv_ptr->image);
 	 
 	++imgit;

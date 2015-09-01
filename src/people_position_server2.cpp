@@ -123,7 +123,7 @@ public:
     //まず、ファイルは以下のような形式にする
     //okao_id,name,hist,x,y,z 
     //okao_idをみて、人物の位置をo_DBHumanに詰め込んでいく   
-    std::ifstream ifs("peopledata.txt");
+    std::ifstream ifs("/home/roomba/peopledata.txt");
     if(ifs.fail())
       {  // if(!fin)でもよい。
 	cout << "file not open" << endl;
@@ -141,7 +141,7 @@ public:
       }
     //cout << 
   }
-
+ 
   //ファイル出力する
   //o_DBHuman
   void file_output()
@@ -157,7 +157,7 @@ public:
 	++it_o; 
       }
 
-    std::ofstream ofs("peopledata.txt");
+    std::ofstream ofs("/home/roomba/peopledata.txt");
 
     if(ofs.fail())
       {  // if(!fout)でもよい。
@@ -225,8 +225,9 @@ public:
     //ROS_INFO("all human publisher");
     humans_msgs::PersonPoseImgArray ppia;
     //o_DBHuman内から、tracking_idをキーにして検索
-    map<long long, humans_msgs::Human>::iterator it_d = d_DBHuman.begin();
-    while( it_d != d_DBHuman.end() )
+    //map<long long, humans_msgs::Human>::iterator it_d = d_DBHuman.begin();
+    map<int, humans_msgs::Human>::iterator it_d = o_DBHuman.begin();
+    while( it_d != o_DBHuman.end() )
       {
 	//	cout <<"name: "<< it_o->second.max_okao_id << " d_id:" << it_o->second.d_id<< endl; 
 	humans_msgs::PersonPoseImg ppi;
