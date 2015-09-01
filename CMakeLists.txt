@@ -216,4 +216,6 @@ target_link_libraries(okao_stack ${catkin_LIBRARIES})
 add_executable(people_position_server2 src/people_position_server2.cpp)
 target_link_libraries(people_position_server2 ${catkin_LIBRARIES})
 
+add_executable(interaction_test2 src/interaction_test2.cpp)
+target_link_libraries(interaction_test2 ${catkin_LIBRARIES})
 
